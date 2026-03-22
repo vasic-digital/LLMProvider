@@ -125,12 +125,12 @@ func TestZenHTTPProvider_ValidateConfig(t *testing.T) {
 
 	valid, errs := provider.ValidateConfig(nil)
 
-	if IsOpenCodeInstalled() {
-		assert.True(t, valid)
-		assert.Empty(t, errs)
+	if IsZenHTTPAvailable() {
+		assert.True(t, valid, "Should be true when opencode is installed")
+		assert.Empty(t, errs, "Should have no issues when opencode is installed")
 	} else {
-		assert.False(t, valid)
-		assert.NotEmpty(t, errs)
+		assert.False(t, valid, "Should be false when opencode is not installed")
+		assert.NotEmpty(t, errs, "Should have issues when opencode is not installed")
 		assert.Contains(t, errs[0], "not available")
 	}
 }
@@ -428,7 +428,7 @@ func TestZenHTTPProvider_BasicAuthCredentials(t *testing.T) {
 
 // TestZenHTTPProvider_StartServerWithoutCLI tests server start failure when CLI missing
 func TestZenHTTPProvider_StartServerWithoutCLI(t *testing.T) {
-	if IsOpenCodeInstalled() {
+	if IsZenHTTPAvailable() {
 		t.Skip("OpenCode is installed - can't test missing CLI scenario")
 	}
 
