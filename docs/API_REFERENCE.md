@@ -375,3 +375,91 @@ All exported types and methods are safe for concurrent use:
 | `digital.vasic.models` | `LLMRequest`, `LLMResponse`, `ProviderCapabilities` types |
 | `github.com/sirupsen/logrus` | Structured logging in circuit breaker |
 | Go standard library | `context`, `sync`, `time`, `net/http`, `math`, `math/rand` |
+
+
+---
+
+## NVIDIA Nemotron RAG Support
+
+HelixAgent provides comprehensive integration with NVIDIA's Nemotron RAG models for document processing, multimodal understanding, and grounded answer generation.
+
+### Supported Models
+
+| Model | Type | Purpose | Context Window |
+|-------|------|---------|----------------|
+| `nvidia/llama-nemotron-embed-vl-1b-v2` | Embedding | Multimodal document embedding (text + images) | 2048-dim vectors |
+| `nvidia/llama-nemotron-rerank-vl-1b-v2` | Reranking | Cross-encoder relevance scoring with vision | VLM-based |
+| `nvidia/llama-3.3-nemotron-super-49b-v1.5` | Generation | Citation-backed answer generation | 128K tokens |
+| `nvidia/nemotron-ocr` | Extraction | Document OCR and structure extraction | N/A |
+
+### Provider Configuration
+
+```go
+nemotronProvider := &NemotronProvider{
+    BaseURL:     "https://integrate.api.nvidia.com/v1",
+    APIKey:      os.Getenv("NVIDIA_API_KEY"),
+    
+    // Model endpoints
+    EmbedModel:   "nvidia/llama-nemotron-embed-vl-1b-v2",
+    RerankModel:  "nvidia/llama-nemotron-rerank-vl-1b-v2",
+    GenerateModel: "nvidia/llama-3.3-nemotron-super-49b-v1.5",
+    
+    // Processing options
+    ChunkSize:      512,
+    ChunkOverlap:   100,
+    ExtractTables:  true,
+    ExtractCharts:  true,
+    TableFormat:    "markdown",
+    RequireCitations: true,
+}
+
+// Register with health monitoring
+monitor.RegisterProvider("nvidia-nemotron", nemotronProvider)
+```
+
+### RAG Query with Citations
+
+```go
+result, err := nemotronProvider.RAGQuery(ctx, &RAGQueryRequest{
+    Document: "financial_report.pdf",
+    Query: "What was Q3 revenue growth?",
+    Options: &RAGOptions{
+        TopK: 10,
+        RerankTopK: 5,
+        CitationLevel: CitationLevelPageSection,
+        IncludeSourceText: true,
+    },
+})
+
+// Result includes:
+// - Answer with inline citations
+// - Source references (page, section)
+// - Confidence score
+// - Extracted context
+```
+
+### Key Features
+
+- **Multimodal Understanding:** Process charts, diagrams, and tables alongside text
+- **Structured Extraction:** Preserve table relationships with Markdown output
+- **Citation-Backed Answers:** Every claim traceable to source document
+- **Vision-Language Models:** Understand visual content in documents
+- **Enterprise-Grade:** Supports compliance and audit requirements
+
+### System Requirements
+
+- **GPU:** Minimum 24GB VRAM for local model deployment
+- **Storage:** 250GB for models, datasets, and vector database
+- **Python:** 3.10-3.12 (for NeMo Retriever library)
+- **API Key:** Free access at [build.nvidia.com](https://build.nvidia.com)
+
+### Documentation
+
+For complete integration guide, see:
+- [NVIDIA Nemotron RAG Integration Guide](/docs/NVIDIA_NEMOTRON_RAG_INTEGRATION.md)
+- [NVIDIA Developer Blog: Document Processing Pipeline](https://developer.nvidia.com/blog/how-to-build-a-document-processing-pipeline-for-rag-with-nemotron/)
+- [NeMo Retriever Library](https://github.com/NVIDIA/NeMo-Retriever)
+
+---
+
+*Last Updated: April 2026*
