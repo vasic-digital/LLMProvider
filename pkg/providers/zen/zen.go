@@ -46,16 +46,26 @@ const (
 	ModelKimiK2  = "kimi-k2"
 	ModelGemini3 = "gemini-3-flash"
 
-	// Legacy model IDs (may not be available anymore)
-	ModelQwen3        = "qwen3-coder"  // Removed from free tier 2026-02
-	ModelGrokCodeFast = "grok-code"    // Deprecated, may not work
-	ModelGLM47Free    = "glm-4.7-free" // Deprecated, use glm-5-free
+	// Deprecated: ModelQwen3 was removed from the free tier in 2026-02.
+	// Use ModelBigPickle or ModelGLM5Free instead.
+	ModelQwen3 = "qwen3-coder"
+	// Deprecated: ModelGrokCodeFast is no longer available on the Zen platform.
+	// Use ModelBigPickle or ModelTrinityLargePreviewFree instead.
+	ModelGrokCodeFast = "grok-code"
+	// Deprecated: ModelGLM47Free has been superseded by ModelGLM5Free.
+	ModelGLM47Free = "glm-4.7-free"
 
-	// Legacy model IDs with prefix (for backward compatibility in configs)
-	ModelBigPickleFull    = "opencode/big-pickle"
+	// Legacy model IDs with prefix (for backward compatibility in configs).
+	ModelBigPickleFull = "opencode/big-pickle"
+	// Deprecated: ModelGrokCodeFastFull is the prefixed form of the deprecated
+	// ModelGrokCodeFast. Use ModelBigPickleFull instead.
 	ModelGrokCodeFastFull = "opencode/grok-code"
-	ModelGLM47FreeFull    = "opencode/glm-4.7-free"
-	ModelGPT5NanoFull     = "opencode/gpt-5-nano"
+	// Deprecated: ModelGLM47FreeFull is the prefixed form of the deprecated
+	// ModelGLM47Free. Use ModelGLM5Free instead.
+	ModelGLM47FreeFull = "opencode/glm-4.7-free"
+	// Deprecated: ModelGPT5NanoFull is not available on the Zen platform.
+	// It was listed speculatively and never worked.
+	ModelGPT5NanoFull = "opencode/gpt-5-nano"
 
 	// Default model for Zen provider - using verified working model
 	DefaultZenModel = ModelBigPickle
