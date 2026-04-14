@@ -1,0 +1,8 @@
+Commit: 1ccd535023905a2712a48eee1691db33ce461fb4
+Branch: HEAD
+1ccd535 chore: bump Go version to 1.25
+aa38176 Add GitHub Sponsors button
+c803d75 security: Add mandatory NO SUDO/ROOT execution constraint
+c62e164 docs: add ARCHITECTURE.md, .env gitignore for v2.1.0
+de120e6 chore: add Upstreams directory for multi-remote push
+
