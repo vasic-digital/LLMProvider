@@ -413,7 +413,7 @@ func TestGeminiAPI_SequentialRetries(t *testing.T) {
 // discovery mechanism.
 func TestGeminiCLI_ConcurrentModelDiscovery(t *testing.T) {
 	if testing.Short() {
-		t.Skip("skipping stress test in -short mode")
+		t.Skip("skipping stress test in -short mode")  // SKIP-OK: #short-mode
 	}
 	runtime.GOMAXPROCS(2)
 	t.Parallel()
