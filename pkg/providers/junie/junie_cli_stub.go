@@ -9,7 +9,9 @@ import (
 )
 
 // JunieCLIProvider is a stub for the CLI provider (not available in standalone module)
-type JunieCLIProvider struct{}
+type JunieCLIProvider struct {
+	model string
+}
 
 // JunieCLIConfig is a stub for CLI configuration
 type JunieCLIConfig struct {
@@ -20,9 +22,15 @@ type JunieCLIConfig struct {
 	APIKey          string
 }
 
-// NewJunieCLIProvider returns a stub
-func NewJunieCLIProvider(_ JunieCLIConfig) *JunieCLIProvider {
-	return &JunieCLIProvider{}
+// NewJunieCLIProvider returns a stub that stores the configured model.
+// When the config model is empty the stub falls back to "junie-1" so that
+// GetCurrentModel always returns a non-empty value.
+func NewJunieCLIProvider(cfg JunieCLIConfig) *JunieCLIProvider {
+	model := cfg.Model
+	if model == "" {
+		model = "junie-1"
+	}
+	return &JunieCLIProvider{model: model}
 }
 
 // IsCLIAvailable returns false (CLI not available in standalone module)
@@ -59,6 +67,9 @@ type JunieACPConfig struct {
 	MaxOutputTokens int
 	Timeout         time.Duration
 	APIKey          string
+	// CWD is the working directory passed to the Junie ACP process.
+	// Defaults to "." (current directory).
+	CWD string
 }
 
 // NewJunieACPProvider returns a stub
@@ -70,7 +81,25 @@ func NewJunieACPProvider(_ JunieACPConfig) *JunieACPProvider {
 func (p *JunieACPProvider) IsAvailable() bool { return false }
 
 var knownJunieModels = []string{"junie-1"}
+
+// byokModels is a flat slice of additional model names available via BYOK.
+// Used internally by getAllJunieModels.
 var byokModels = []string{}
+
+// byokProviders maps BYOK provider names to their supported model lists.
+// Returned by GetBYOKModels.
+var byokProviders = map[string][]string{
+	"anthropic": {"claude-3-opus", "claude-3-sonnet", "claude-3-haiku"},
+	"openai":    {"gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"},
+	"google":    {"gemini-pro", "gemini-flash"},
+	"grok":      {"grok-1"},
+}
+
+// GetKnownJunieModels returns the list of known Junie model identifiers.
+func GetKnownJunieModels() []string { return knownJunieModels }
+
+// GetBYOKModels returns the map of BYOK provider names to their model lists.
+func GetBYOKModels() map[string][]string { return byokProviders }
 
 // Complete is not available for ACP
 func (p *JunieACPProvider) Complete(_ context.Context, _ *models.LLMRequest) (*models.LLMResponse, error) {
@@ -92,10 +121,10 @@ func (p *JunieACPProvider) HealthCheck() error {
 	return fmt.Errorf("Junie ACP not available in standalone module")
 }
 
-// SetModel for CLI stub
-func (p *JunieCLIProvider) SetModel(_ string) {}
+// SetModel updates the model on the CLI stub.
+func (p *JunieCLIProvider) SetModel(model string) { p.model = model }
 
-// SetModel for ACP stub
+// SetModel is a no-op for the ACP stub.
 func (p *JunieACPProvider) SetModel(_ string) {}
 
 // CanUseJunieCLI returns false (not available in standalone module)
@@ -104,24 +133,39 @@ func CanUseJunieCLI() bool { return false }
 // CanUseJunieACP returns false (not available in standalone module)
 func CanUseJunieACP() bool { return false }
 
-// DefaultJunieCLIConfig returns a default CLI config stub
+// DefaultJunieCLIConfig returns a default CLI config stub.
+// Model is intentionally empty — callers set it explicitly.
 func DefaultJunieCLIConfig() JunieCLIConfig {
-	return JunieCLIConfig{Model: "junie-1", MaxTokens: 4096}
+	return JunieCLIConfig{
+		MaxTokens:       4096,
+		MaxOutputTokens: 8192,
+		Timeout:         180 * time.Second,
+	}
 }
 
-// DefaultJunieACPConfig returns a default ACP config stub
+// DefaultJunieACPConfig returns a default ACP config stub.
 func DefaultJunieACPConfig() JunieACPConfig {
-	return JunieACPConfig{Model: "junie-1", MaxTokens: 4096}
+	return JunieACPConfig{
+		MaxTokens: 8192,
+		Timeout:   180 * time.Second,
+		CWD:       ".",
+	}
 }
 
-// GetCurrentModel returns the current model (stub)
-func (p *JunieCLIProvider) GetCurrentModel() string { return "junie-1" }
+// GetCurrentModel returns the model set on the CLI stub.
+func (p *JunieCLIProvider) GetCurrentModel() string { return p.model }
 
-// GetCurrentModel returns the current model (stub)
+// GetCurrentModel returns the current model (ACP stub).
 func (p *JunieACPProvider) GetCurrentModel() string { return "junie-1" }
 
-// GetName returns the provider name (stub)
+// GetName returns the provider name.
+func (p *JunieACPProvider) GetName() string { return "junie-acp" }
+
+// GetProviderType returns the provider type.
+func (p *JunieACPProvider) GetProviderType() string { return "junie" }
+
+// GetName returns the provider name.
 func (p *JunieCLIProvider) GetName() string { return "junie-cli" }
 
-// GetProviderType returns the provider type (stub)
-func (p *JunieCLIProvider) GetProviderType() string { return "cli" }
+// GetProviderType returns the provider type.
+func (p *JunieCLIProvider) GetProviderType() string { return "junie" }

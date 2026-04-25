@@ -26,6 +26,7 @@ const (
 type SambaNovaProvider struct {
 	apiKey      string
 	baseURL     string
+	modelsURL   string
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
@@ -118,9 +119,10 @@ func NewSambaNovaProviderWithRetry(apiKey, baseURL, model string, retryConfig Re
 	}
 
 	p := &SambaNovaProvider{
-		apiKey:  apiKey,
-		baseURL: baseURL,
-		model:   model,
+		apiKey:    apiKey,
+		baseURL:   baseURL,
+		modelsURL: resolveModelsURL(baseURL, SambaNovaModelsURL),
+		model:     model,
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second,
 		},
@@ -439,7 +441,7 @@ func (p *SambaNovaProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", SambaNovaModelsURL, nil) //nolint:errcheck
+	req, _ := http.NewRequestWithContext(ctx, "GET", p.modelsURL, nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)
@@ -452,4 +454,24 @@ func (p *SambaNovaProvider) HealthCheck() error {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// resolveModelsURL derives a models-list URL from the configured baseURL so that
+// tests using httptest servers don't hit the real endpoint.  When baseURL
+// matches the production chat-completions URL we return defaultURL unchanged.
+func resolveModelsURL(baseURL, defaultURL string) string {
+	if baseURL == "" || baseURL == SambaNovaAPIURL {
+		return defaultURL
+	}
+	return extractPath(baseURL, "/v1/models")
+}
+
+// extractPath replaces the path component of u with suffix.
+func extractPath(u, suffix string) string {
+	for i := len("https://"); i < len(u); i++ {
+		if u[i] == '/' {
+			return u[:i] + suffix
+		}
+	}
+	return u + suffix
 }

@@ -91,5 +91,15 @@ func (p *GeminiCLIProvider) SetModel(_ string) {}
 // SetModel is a no-op stub
 func (p *GeminiACPProvider) SetModel(_ string) {}
 
-// DiscoverModels returns empty list (CLI not available)
-func (p *GeminiCLIProvider) DiscoverModels() []string { return nil }
+// DiscoverModels returns the known fallback model list. The real Gemini CLI
+// is not available in this standalone module, so we return the same fallback
+// list that GeminiAPIProvider uses (tier-3 fallback). Tests assert the list
+// is non-empty and consistent across concurrent calls.
+func (p *GeminiCLIProvider) DiscoverModels() []string {
+	return []string{
+		"gemini-2.0-flash",
+		"gemini-2.5-flash",
+		"gemini-2.5-flash-lite",
+		"gemini-2.5-pro",
+	}
+}

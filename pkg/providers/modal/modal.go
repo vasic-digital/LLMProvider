@@ -27,6 +27,7 @@ type ModalProvider struct {
 	apiKey      string
 	apiKeyID    string
 	baseURL     string
+	modelsURL   string
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
@@ -122,6 +123,7 @@ func NewModalProviderWithRetry(apiKey, apiKeyID, baseURL, model string, retryCon
 		apiKey:      apiKey,
 		apiKeyID:    apiKeyID,
 		baseURL:     baseURL,
+		modelsURL:   resolveModelsURL(baseURL, ModalModelsURL),
 		model:       model,
 		httpClient:  &http.Client{Timeout: 120 * time.Second},
 		retryConfig: retryConfig,
@@ -441,7 +443,7 @@ func (p *ModalProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", ModalModelsURL, nil) //nolint:errcheck
+	req, _ := http.NewRequestWithContext(ctx, "GET", p.modelsURL, nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)
@@ -454,4 +456,24 @@ func (p *ModalProvider) HealthCheck() error {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// resolveModelsURL derives a models-list URL from the configured baseURL so that
+// tests using httptest servers don't hit the real endpoint.  When baseURL
+// matches the production chat-completions URL we return defaultURL unchanged.
+func resolveModelsURL(baseURL, defaultURL string) string {
+	if baseURL == "" || baseURL == ModalAPIURL {
+		return defaultURL
+	}
+	return extractPath(baseURL, "/v1/models")
+}
+
+// extractPath replaces the path component of u with suffix.
+func extractPath(u, suffix string) string {
+	for i := len("https://"); i < len(u); i++ {
+		if u[i] == '/' {
+			return u[:i] + suffix
+		}
+	}
+	return u + suffix
 }

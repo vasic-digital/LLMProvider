@@ -1137,5 +1137,8 @@ func (p *ZenProvider) GetFreeModels(ctx context.Context) ([]ZenModelInfo, error)
 	return freeModels, nil
 }
 
-// IsOpenCodeInstalled returns false (CLI not available in standalone module)
-func IsOpenCodeInstalled() bool { return false }
+// IsOpenCodeInstalled returns true if the opencode CLI is reachable in PATH.
+func IsOpenCodeInstalled() bool {
+	_, err := exec.LookPath("opencode")
+	return err == nil
+}

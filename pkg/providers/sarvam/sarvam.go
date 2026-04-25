@@ -26,6 +26,7 @@ const (
 type SarvamProvider struct {
 	apiKey      string
 	baseURL     string
+	modelsURL   string
 	model       string
 	httpClient  *http.Client
 	retryConfig RetryConfig
@@ -119,7 +120,8 @@ func NewSarvamProviderWithRetry(apiKey, baseURL, model string, retryConfig Retry
 
 	p := &SarvamProvider{
 		apiKey:  apiKey,
-		baseURL: baseURL,
+		baseURL:    baseURL,
+		modelsURL:  resolveModelsURL(baseURL, SarvamModelsURL),
 		model:   model,
 		httpClient: &http.Client{
 			Timeout: 120 * time.Second,
@@ -441,7 +443,7 @@ func (p *SarvamProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", SarvamModelsURL, nil) //nolint:errcheck
+	req, _ := http.NewRequestWithContext(ctx, "GET", p.modelsURL, nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)
@@ -454,4 +456,52 @@ func (p *SarvamProvider) HealthCheck() error {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// resolveModelsURL derives the models list endpoint from the provider's
+// configured baseURL by preserving the scheme+host and appending modelsPath.
+// Falls back to defaultURL when baseURL is empty or cannot be parsed.
+func resolveModelsURL(baseURL, defaultURL string) string {
+	if baseURL == "" {
+		return defaultURL
+	}
+	// net/url is already imported via standard library transitive imports;
+	// use string splitting to avoid adding an import.
+	// Find the third slash (end of scheme://host).
+	idx := 0
+	slashes := 0
+	for i, c := range baseURL {
+		if c == '/' {
+			slashes++
+			if slashes == 3 {
+				idx = i
+				break
+			}
+		}
+	}
+	if slashes < 3 {
+		// No path component: baseURL is just scheme://host
+		return baseURL + extractPath(defaultURL)
+	}
+	return baseURL[:idx] + extractPath(defaultURL)
+}
+
+// extractPath returns the path component of a URL (everything from the first
+// '/' after the scheme+host).
+func extractPath(u string) string {
+	idx := 0
+	slashes := 0
+	for i, c := range u {
+		if c == '/' {
+			slashes++
+			if slashes == 3 {
+				idx = i
+				break
+			}
+		}
+	}
+	if slashes < 3 {
+		return ""
+	}
+	return u[idx:]
 }
