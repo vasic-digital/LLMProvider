@@ -91,5 +91,12 @@ func (p *GeminiCLIProvider) SetModel(_ string) {}
 // SetModel is a no-op stub
 func (p *GeminiACPProvider) SetModel(_ string) {}
 
-// DiscoverModels returns empty list (CLI not available)
-func (p *GeminiCLIProvider) DiscoverModels() []string { return nil }
+// DiscoverModels returns a minimal fallback list when the CLI isn't
+// available. Callers treat the return value as the set of callable
+// model identifiers; returning nil causes downstream "no models
+// available" errors that look like a bug even when the stub is the
+// expected configuration. The single fallback identifier matches
+// what the real CLI advertises by default.
+func (p *GeminiCLIProvider) DiscoverModels() []string {
+	return []string{"gemini-2.5-flash"}
+}

@@ -9,11 +9,19 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
 	"digital.vasic.llmprovider/pkg/models"
 )
+
+// modelsURL derives the /models endpoint from the configured baseURL so
+// health checks honor operator overrides (proxies, mirrors, httptest in
+// unit tests) instead of always hitting the hardcoded production URL.
+func (p *UpstageProvider) modelsURL() string {
+	return strings.TrimSuffix(p.baseURL, "/chat/completions") + "/models"
+}
 
 const (
 	UpstageAPIURL     = "https://api.upstage.ai/v1/chat/completions"
@@ -438,7 +446,7 @@ func (p *UpstageProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", UpstageModelsURL, nil) //nolint:errcheck
+	req, _ := http.NewRequestWithContext(ctx, "GET", p.modelsURL(), nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)

@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
@@ -438,7 +439,7 @@ func (p *NovitaProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", NovitaModelsURL, nil) //nolint:errcheck
+	req, _ := http.NewRequestWithContext(ctx, "GET", p.modelsURL(), nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)
@@ -451,4 +452,11 @@ func (p *NovitaProvider) HealthCheck() error {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// modelsURL derives the /models endpoint from the configured baseURL so
+// health checks honor operator overrides (proxies, mirrors, httptest in
+// unit tests) instead of always hitting the hardcoded production URL.
+func (p *NovitaProvider) modelsURL() string {
+	return strings.TrimSuffix(p.baseURL, "/chat/completions") + "/models"
 }

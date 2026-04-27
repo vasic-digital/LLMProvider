@@ -176,7 +176,7 @@ func TestValidateConfig(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping health check test in short mode")
+		t.Skip("Skipping health check test in short mode")  // SKIP-OK: #short-mode
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{
@@ -194,7 +194,7 @@ func TestHealthCheck(t *testing.T) {
 
 func TestHealthCheckWithError(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping health check test in short mode")
+		t.Skip("Skipping health check test in short mode")  // SKIP-OK: #short-mode
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)

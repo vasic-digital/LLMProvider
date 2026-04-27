@@ -222,7 +222,7 @@ func TestValidateConfig(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping health check test in short mode - requires real Cloudflare API")
+		t.Skip("Skipping health check test in short mode - requires real Cloudflare API")  // SKIP-OK: #short-mode
 	}
 
 	provider := NewCloudflareProvider("test-key", "test-account", "", "")

@@ -9,11 +9,19 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
 	"digital.vasic.llmprovider/pkg/models"
 )
+
+// modelsURL derives the /models endpoint from the configured baseURL so
+// health checks honor operator overrides (proxies, mirrors, httptest in
+// unit tests) instead of always hitting the hardcoded production URL.
+func (p *CodestralProvider) modelsURL() string {
+	return strings.TrimSuffix(p.baseURL, "/chat/completions") + "/models"
+}
 
 const (
 	CodestralAPIURL     = "https://api.mistral.ai/v1/chat/completions"
@@ -517,7 +525,7 @@ func (p *CodestralProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", CodestralModelsURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", p.modelsURL(), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create health check request: %w", err)
 	}

@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
@@ -437,7 +438,7 @@ func (p *VulavulaProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", VulavulaModelsURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", p.modelsURL(), nil)
 	if err != nil {
 		return fmt.Errorf("failed to create health check request: %w", err)
 	}
@@ -453,4 +454,14 @@ func (p *VulavulaProvider) HealthCheck() error {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// modelsURL returns the Vulavula /models endpoint derived from the
+// configured baseURL. Derives it by stripping a trailing `/chat/completions`
+// segment (production default) and appending `/models`; callers that pass a
+// test-server URL get the test server's root plus `/models`, which works
+// because the test handler responds to any path.
+func (p *VulavulaProvider) modelsURL() string {
+	trimmed := strings.TrimSuffix(p.baseURL, "/chat/completions")
+	return trimmed + "/models"
 }

@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
@@ -441,7 +442,7 @@ func (p *ZhipuProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", ZhipuModelsURL, nil) //nolint:errcheck
+	req, _ := http.NewRequestWithContext(ctx, "GET", p.modelsURL(), nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)
@@ -454,4 +455,13 @@ func (p *ZhipuProvider) HealthCheck() error {
 		return fmt.Errorf("health check failed with status: %d", resp.StatusCode)
 	}
 	return nil
+}
+
+// modelsURL returns the Zhipu /models endpoint derived from the configured
+// baseURL. Mirrors the Vulavula pattern: strip a trailing `/chat/completions`
+// and append `/models` so the health check respects operator-supplied
+// overrides (including httptest servers in unit tests).
+func (p *ZhipuProvider) modelsURL() string {
+	trimmed := strings.TrimSuffix(p.baseURL, "/chat/completions")
+	return trimmed + "/models"
 }

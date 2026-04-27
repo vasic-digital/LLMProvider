@@ -23,3 +23,5 @@ vendor/
 # OS
 .DS_Store
 Thumbs.db
+
+reports/demos/

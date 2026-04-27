@@ -9,11 +9,19 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
 	"digital.vasic.llmprovider/pkg/models"
 )
+
+// modelsURL derives the /models endpoint from the configured baseURL so
+// health checks honor operator overrides (proxies, mirrors, httptest in
+// unit tests) instead of always hitting the hardcoded production URL.
+func (p *ModalProvider) modelsURL() string {
+	return strings.TrimSuffix(p.baseURL, "/chat/completions") + "/models"
+}
 
 const (
 	ModalAPIURL     = "https://api.modal.com/v1/chat/completions"
@@ -441,7 +449,7 @@ func (p *ModalProvider) HealthCheck() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", ModalModelsURL, nil) //nolint:errcheck
+	req, _ := http.NewRequestWithContext(ctx, "GET", p.modelsURL(), nil) //nolint:errcheck
 	req.Header.Set("Authorization", "Bearer "+p.apiKey)
 
 	resp, err := p.httpClient.Do(req)
