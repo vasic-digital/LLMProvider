@@ -346,3 +346,45 @@ test added going forward MUST pass an honest self-review against
 this taxonomy before being committed.
 
 <!-- END const035-strengthening-2026-04-29 -->
+
+<!-- BEGIN iter-52 anti-bluff covenant propagation (CONST-035) -->
+### MANDATORY ANTI-BLUFF COVENANT — END-USER QUALITY GUARANTEE (User mandate, 2026-04-28)
+
+**Forensic anchor — direct user mandate (verbatim):**
+
+> "We had been in position that all tests do execute with success
+> and all Challenges as well, but in reality the most of the
+> features does not work and can't be used! This MUST NOT be the
+> case and execution of tests and Challenges MUST guarantee the
+> quality, the completion and full usability by end users of the
+> product!"
+
+**Operative rule:** the bar for shipping is **not** "tests pass"
+but **"users can use the feature."** Every PASS in this codebase
+MUST carry positive evidence captured during execution that the
+feature works for the end user. Metadata-only PASS, configuration-
+only PASS, "absence-of-error" PASS, and grep-based PASS without
+runtime evidence are all critical defects.
+
+**Tests AND Challenges (HelixQA) are bound equally** — a Challenge
+that scores PASS on a non-functional feature is the same class of
+defect as a unit test that does.
+
+### Verification commands
+
+Run before claiming a fix is complete:
+
+```bash
+bash scripts/anti-bluff/bluff-scanner.sh --mode all
+bash yole-challenges/scripts/anchor_manifest_challenge.sh
+bash yole-challenges/scripts/mutation_ratchet_challenge.sh
+```
+
+All three must PASS. Pre-existing bluff hits are tracked in
+`yole-challenges/baselines/bluff-baseline.txt`; do not extend the baseline
+without an explicit justification comment.
+
+**Skip-marker convention:** `// SKIP-OK: #<ticket>` (canonical),
+`// ANTI-BLUFF-EXEMPT: <reason>` (synonym).
+
+<!-- END iter-52 anti-bluff covenant propagation (CONST-035) -->
