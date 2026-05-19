@@ -1,0 +1,13 @@
+# LLMProvider round-276 challenge fixture — German (de).
+#
+# Drives the Challenge runner at challenges/runner/main.go through a
+# real circuit-breaker + health-monitor + retry flow. Anti-bluff:
+# every PASS in the runner is backed by a runtime invariant — never
+# a metadata-only check.
+locale: de
+provider_id: "test-de-provider"
+prompt: "Fuegen Sie OAuth2-Authentifizierung zum API-Gateway-Dienst hinzu"
+expect_circuit_state_initial: "closed"
+expect_failure_threshold: 3
+expect_health_status_initial: "unknown"
+expect_retry_initial_delay_ms: 100
