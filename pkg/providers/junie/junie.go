@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -358,8 +359,8 @@ func GetJunieProviderInfo() map[string]interface{} {
 		"id":           "junie",
 		"name":         "Junie (JetBrains)",
 		"type":         "junie",
-		"display_name": "Junie AI Coding Agent",
-		"description":  "JetBrains' AI-powered coding agent with BYOK support for 22+ LLM providers",
+		"display_name": i18n.Tr(context.Background(), "provider.junie.display_name", nil),
+		"description":  i18n.Tr(context.Background(), "provider.junie.description", nil),
 		"auth_type":    "api_key",
 		"access_methods": []string{
 			"cli",

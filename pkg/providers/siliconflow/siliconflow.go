@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -430,7 +431,7 @@ func (p *SiliconFlowProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		Metadata: map[string]string{
 			"provider": "SiliconFlow",
-			"note":     "SiliconFlow AI inference platform",
+			"note":     i18n.Tr(context.Background(), "provider.siliconflow.description", nil),
 		},
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -422,7 +423,7 @@ func (p *NovitaProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		Metadata: map[string]string{
 			"provider": "Novita",
-			"note":     "Novita AI inference platform",
+			"note":     i18n.Tr(context.Background(), "provider.novita.description", nil),
 		},
 	}
 }

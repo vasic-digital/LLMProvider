@@ -1,0 +1,29 @@
+# LLMProvider CONST-046 i18n bundle — English source locale.
+# round-338 §11.4 anti-bluff sweep (2026-05-19).
+#
+# Each entry is a provider-description string surfaced to end users
+# in model / provider listings. Translators add active.<locale>.yaml
+# siblings; the consuming binary loads the active-locale bundle and
+# injects a Translator via i18n.SetTranslator.
+provider.cerebras.description: "Ultra-fast inference on Cerebras hardware"
+provider.cloudflare.description: "Cloudflare Workers AI"
+provider.codestral.description: "Mistral AI code-focused model"
+provider.hyperbolic.description: "Hyperbolic AI inference platform"
+provider.kilo.description: "Kilo Code AI assistant"
+provider.kimi.description: "Moonshot AI Kimi chat model"
+provider.modal.description: "Modal serverless inference platform"
+provider.nia.description: "Nia AI assistant"
+provider.nlpcloud.description: "NLP Cloud AI inference platform"
+provider.novita.description: "Novita AI inference platform"
+provider.nvidia.description: "NVIDIA NIM API for LLM inference"
+provider.publicai.description: "Swiss AI Apertus - open-source LLM via Public AI Gateway"
+provider.sambanova.description: "SambaNova AI inference platform"
+provider.sarvam.description: "Sarvam AI India LLM"
+provider.siliconflow.description: "SiliconFlow AI inference platform"
+provider.upstage.description: "Upstage Solar LLM"
+provider.vulavula.description: "Vulavula AI - African LLM"
+provider.zhipu.description: "Zhipu AI GLM models"
+provider.zen.description: "OpenCode Zen gateway - Free models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)"
+provider.junie.display_name: "Junie AI Coding Agent"
+provider.junie.description: "JetBrains' AI-powered coding agent with BYOK support for 22+ LLM providers"
+provider.gemini.description: "Google's Gemini models with API, CLI headless, and ACP access methods"

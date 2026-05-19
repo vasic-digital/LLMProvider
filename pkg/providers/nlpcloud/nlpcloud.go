@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -440,7 +441,7 @@ func (p *NLPCloudProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		Metadata: map[string]string{
 			"provider": "NLPCloud",
-			"note":     "NLP Cloud AI inference platform",
+			"note":     i18n.Tr(context.Background(), "provider.nlpcloud.description", nil),
 		},
 	}
 }

@@ -8,10 +8,46 @@ import (
 	"testing"
 	"time"
 
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// TestGetCapabilities_NoteResolvesThroughI18n is the CONST-046
+// round-338 paired-mutation guard. It installs a Translator whose
+// bundle entry for provider.kilo.description differs from the
+// English source literal and asserts GetCapabilities() surfaces the
+// MUTATED value in Metadata["note"]. A PASS proves the provider
+// resolves the description through the i18n seam at runtime; if the
+// migration were a bluff (literal still hardcoded), the mutated
+// bundle would have no effect and this test would FAIL.
+func TestGetCapabilities_NoteResolvesThroughI18n(t *testing.T) {
+	const mutated = "MUTATED-kilo-description-round-338"
+	bt, err := i18n.NewBundleTranslatorFromBytes([]byte(
+		"provider.kilo.description: \"" + mutated + "\"\n"))
+	require.NoError(t, err)
+	i18n.SetTranslator(bt)
+	t.Cleanup(func() { i18n.SetTranslator(nil) })
+
+	provider := NewKiloProvider("test-api-key", "", "")
+	caps := provider.GetCapabilities()
+	require.NotNil(t, caps)
+	assert.Equal(t, mutated, caps.Metadata["note"],
+		"Metadata[note] must resolve through the i18n seam, not a hardcoded literal")
+}
+
+// TestGetCapabilities_NoteFallsBackToEcho verifies that with no
+// Translator wired, Metadata["note"] degrades to the loud message-ID
+// echo rather than an empty string.
+func TestGetCapabilities_NoteFallsBackToEcho(t *testing.T) {
+	i18n.SetTranslator(nil)
+	provider := NewKiloProvider("test-api-key", "", "")
+	caps := provider.GetCapabilities()
+	require.NotNil(t, caps)
+	assert.Equal(t, "provider.kilo.description", caps.Metadata["note"],
+		"unwired seam must emit a loud message-ID echo")
+}
 
 func TestNewProvider(t *testing.T) {
 	provider := NewKiloProvider("test-api-key", "", "")
@@ -176,7 +212,7 @@ func TestValidateConfig(t *testing.T) {
 
 func TestHealthCheck(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping health check test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping health check test in short mode") // SKIP-OK: #short-mode
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := map[string]interface{}{
@@ -194,7 +230,7 @@ func TestHealthCheck(t *testing.T) {
 
 func TestHealthCheckWithError(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping health check test in short mode")  // SKIP-OK: #short-mode
+		t.Skip("Skipping health check test in short mode") // SKIP-OK: #short-mode
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusServiceUnavailable)

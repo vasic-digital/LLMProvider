@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -428,7 +429,7 @@ func (p *KiloProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		Metadata: map[string]string{
 			"provider": "Kilo",
-			"note":     "Kilo Code AI assistant",
+			"note":     i18n.Tr(context.Background(), "provider.kilo.description", nil),
 		},
 	}
 }

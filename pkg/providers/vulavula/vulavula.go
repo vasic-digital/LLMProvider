@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -421,7 +422,7 @@ func (p *VulavulaProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		Metadata: map[string]string{
 			"provider": "Vulavula",
-			"note":     "Vulavula AI - African LLM",
+			"note":     i18n.Tr(context.Background(), "provider.vulavula.description", nil),
 		},
 	}
 }

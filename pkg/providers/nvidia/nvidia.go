@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -422,7 +423,7 @@ func (p *NvidiaProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		Metadata: map[string]string{
 			"provider": "NVIDIA NIM",
-			"note":     "NVIDIA NIM API for LLM inference",
+			"note":     i18n.Tr(context.Background(), "provider.nvidia.description", nil),
 		},
 	}
 }

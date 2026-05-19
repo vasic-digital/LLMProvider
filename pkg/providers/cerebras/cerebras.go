@@ -14,6 +14,7 @@ import (
 	"digital.vasic.llmprovider/pkg/models"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"github.com/sirupsen/logrus"
 )
 
@@ -648,7 +649,7 @@ func (p *CerebrasProvider) GetCapabilities() *models.ProviderCapabilities {
 			"provider":     "Cerebras",
 			"model_family": "Llama",
 			"api_version":  "v1",
-			"note":         "Ultra-fast inference on Cerebras hardware",
+			"note":         i18n.Tr(context.Background(), "provider.cerebras.description", nil),
 		},
 	}
 }
