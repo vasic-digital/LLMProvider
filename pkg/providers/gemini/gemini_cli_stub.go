@@ -86,10 +86,14 @@ func (p *GeminiACPProvider) CompleteStream(_ context.Context, _ *models.LLMReque
 }
 
 // SetModel is a no-op stub
-func (p *GeminiCLIProvider) SetModel(_ string) {}
+func (p *GeminiCLIProvider) SetModel(_ string) {
+	_ = p
+}
 
 // SetModel is a no-op stub
-func (p *GeminiACPProvider) SetModel(_ string) {}
+func (p *GeminiACPProvider) SetModel(_ string) {
+	_ = p
+}
 
 // DiscoverModels returns a minimal fallback list when the CLI isn't
 // available. Callers treat the return value as the set of callable

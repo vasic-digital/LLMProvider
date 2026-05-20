@@ -1,6 +1,10 @@
-# CONST-053 — proper .gitignore (round-292, vasic-digital twin)
+# LLMProvider .gitignore — CONST-053 compliant
+# (cascaded from constitution submodule §11.4.30)
+# Round-341 merge-first reconciliation (CONST-061): union of the
+# round-292 vasic-digital twin and the HelixDevelopment lineage
+# .gitignore — every pattern from both kept.
 
-# Environment / secrets (CONST-042 + CONST-053 §4)
+# Environment / secrets (CONST-042 §12.1 + CONST-053 class 4)
 .env
 .env.*
 !.env.example
@@ -13,7 +17,7 @@ id_ed25519*
 secrets/
 api_keys.sh
 
-# Build artefacts (CONST-053 §1)
+# Build artefacts (CONST-053 class 1)
 /bin/
 /build/
 /dist/
@@ -32,7 +36,7 @@ target/
 *.pyc
 vendor/
 
-# Cache files (CONST-053 §2)
+# Cache files (CONST-053 class 2)
 __pycache__/
 .pytest_cache/
 .mypy_cache/
@@ -43,7 +47,7 @@ node_modules/
 .gradle/
 .terraform/
 
-# Temp files (CONST-053 §3)
+# Temp files (CONST-053 class 3)
 *.tmp
 *.swp
 *.swo
@@ -51,17 +55,18 @@ node_modules/
 *.orig
 *.rej
 
-# OS / IDE personal state (CONST-053 §6)
+# OS / IDE personal state (CONST-053 class 6)
 .idea/
 .history/
 .vscode/
 .DS_Store
 Thumbs.db
 
-# Generated reports / logs (CONST-053 §5)
+# Generated reports / logs (CONST-053 class 5)
 *.log
 coverage.out
 htmlcov/
+reports/
 reports/demos/
 
 # Stray go-build artefacts at repo root

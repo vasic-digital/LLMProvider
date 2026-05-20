@@ -384,9 +384,7 @@ func TestDeepSeekProvider_HealthCheck(t *testing.T) {
 		err := provider.HealthCheck()
 		// We expect an error since we can't reach the real API
 		// The error could be network-related or auth-related
-		if err != nil {
-			assert.True(t, true) // Expected - API call failed
-		}
+		assert.Error(t, err, "HealthCheck with invalid key must return an error")
 	})
 
 	t.Run("health check timeout", func(t *testing.T) {

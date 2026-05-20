@@ -93,10 +93,14 @@ func (p *JunieACPProvider) HealthCheck() error {
 }
 
 // SetModel for CLI stub
-func (p *JunieCLIProvider) SetModel(_ string) {}
+func (p *JunieCLIProvider) SetModel(_ string) {
+	_ = p
+}
 
 // SetModel for ACP stub
-func (p *JunieACPProvider) SetModel(_ string) {}
+func (p *JunieACPProvider) SetModel(_ string) {
+	_ = p
+}
 
 // CanUseJunieCLI returns false (not available in standalone module)
 func CanUseJunieCLI() bool { return false }
