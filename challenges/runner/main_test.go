@@ -1,4 +1,4 @@
-// main_test.go — paired-mutation guard for the round-276 Challenge
+// main_test.go — paired-mutation guard for the round-292 Challenge
 // runner (CONST-050(A) §1.1). The runner ships with a mutation hook
 // (LLMPROVIDER_MUTATE_RUNNER=1) that inverts invariant 3 polarity.
 // If a future edit silently removes the mutation logic, the runner

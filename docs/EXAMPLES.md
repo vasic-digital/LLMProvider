@@ -18,7 +18,7 @@ import (
     "net/http"
 
     "digital.vasic.llmprovider"
-    "digital.vasic.models"
+    "digital.vasic.llmprovider/pkg/models"
 )
 
 type MyProvider struct {

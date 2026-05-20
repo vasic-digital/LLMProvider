@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -402,9 +403,9 @@ func (p *Provider) ValidateConfig(config map[string]interface{}) (bool, []string
 	var errors []string
 
 	if p.apiKey == "" {
-		errors = append(errors, "API key is required (Groq API key starts with 'gsk_')")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_required_groq", nil))
 	} else if !strings.HasPrefix(p.apiKey, "gsk_") {
-		errors = append(errors, "Invalid API key format (should start with 'gsk_')")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_format_groq", nil))
 	}
 
 	return len(errors) == 0, errors

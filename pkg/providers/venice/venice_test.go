@@ -769,7 +769,7 @@ func TestConvertRequest(t *testing.T) {
 	apiReq := p.convertRequest(req)
 
 	assert.Equal(t, "deepseek-r1-671b", apiReq.Model) // Model override
-	assert.Len(t, apiReq.Messages, 4)                  // System + 3
+	assert.Len(t, apiReq.Messages, 4)                 // System + 3
 	assert.Equal(t, "system", apiReq.Messages[0].Role)
 	assert.Equal(t,
 		"You are a helpful assistant.",

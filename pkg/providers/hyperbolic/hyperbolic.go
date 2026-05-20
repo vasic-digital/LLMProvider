@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -429,7 +430,7 @@ func (p *HyperbolicProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		Metadata: map[string]string{
 			"provider": "Hyperbolic",
-			"note":     "Hyperbolic AI inference platform",
+			"note":     i18n.Tr(context.Background(), "provider.hyperbolic.description", nil),
 		},
 	}
 }
@@ -437,7 +438,7 @@ func (p *HyperbolicProvider) GetCapabilities() *models.ProviderCapabilities {
 func (p *HyperbolicProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
 	var errors []string
 	if p.apiKey == "" {
-		errors = append(errors, "API key is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_required", nil))
 	}
 	return len(errors) == 0, errors
 }

@@ -3,7 +3,7 @@
 # for LLMProvider per CONST-035 + CONST-050(B). Cascade per CONST-051(A).
 
 set -uo pipefail
-HEALTH_URL="${LLMPROVIDER_HEALTH_URL:-}"
+HEALTH_URL="${LLMPROVIDER_VD_HEALTH_URL:-}"
 DURATION="${STRESS_DURATION_SEC:-15}"
 RPS="${STRESS_REQUESTS_PER_SEC:-50}"
 CONCURRENCY="${STRESS_CONCURRENCY:-20}"
@@ -15,7 +15,7 @@ echo "=== LLMProvider Stress Sustained-Load Challenge ==="
 echo "  url=$HEALTH_URL dur=${DURATION}s rps=${RPS}"
 
 if [[ -z "$HEALTH_URL" ]]; then
-    echo "[1/6] SKIP: LLMPROVIDER_HEALTH_URL unset — SKIP-OK: #env-no-target"
+    echo "[1/6] SKIP: LLMPROVIDER_VD_HEALTH_URL unset — SKIP-OK: #env-no-target"
     echo "=== LLMProvider Stress Challenge: PASSED (SKIP-OK) ==="
     exit 0
 fi

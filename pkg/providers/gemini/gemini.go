@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -585,7 +586,7 @@ func GetGeminiProviderInfo() map[string]interface{} {
 		"name":         "Gemini (Google)",
 		"type":         "gemini",
 		"display_name": "Google Gemini",
-		"description":  "Google's Gemini models with API, CLI headless, and ACP access methods",
+		"description":  i18n.Tr(context.Background(), "provider.gemini.description", nil),
 		"auth_type":    "api_key",
 		"access_methods": []string{
 			"api",

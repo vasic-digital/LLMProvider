@@ -54,7 +54,16 @@ type ProviderConfig struct {
 	// If nil, the standard OpenAI /v1/models response format is assumed.
 	ResponseParser func(resp *http.Response) ([]string, error)
 
-	// FallbackModels is the hardcoded list of known models (Tier 3).
+	// FallbackModels was the hardcoded list of known models (Tier 3).
+	//
+	// DEPRECATED / NO LONGER CONSULTED — CONST-036 strict reading (LLMsVerifier
+	// Single Source of Truth, NO hardcoded model lists). The field is retained
+	// only to keep existing provider constructors compiling without a 40-file
+	// sweep; the discoverer no longer reads it. Callers should rely exclusively
+	// on Tier 1 (provider API) discovery; if that is unreachable, DiscoverModels
+	// returns nil and the caller is responsible for surfacing the unavailability
+	// to the end user honestly (rather than serving a stale hardcoded catalogue
+	// the user cannot actually invoke).
 	FallbackModels []string
 
 	// CacheTTL controls how long discovered models are cached (default: 1 hour).
@@ -95,10 +104,16 @@ func NewDiscoverer(config ProviderConfig) *Discoverer {
 	}
 }
 
-// DiscoverModels returns available models using 3-tier discovery:
+// DiscoverModels returns available models using 2-tier discovery:
 //   - Tier 1: Provider API (e.g., /v1/models)
-//   - Tier 2: models.dev API
-//   - Tier 3: Hardcoded fallback
+//   - Tier 2: models.dev API (stub in standalone module)
+//
+// Tier 3 (hardcoded fallback) was REMOVED per CONST-036: hardcoded model
+// lists drift, so a green test that consults them is a bluff. If the live
+// API is unreachable, DiscoverModels returns nil and the caller MUST treat
+// that as "models unavailable right now," not "here are some that probably
+// work." Authority for the canonical per-provider model catalogue belongs
+// to LLMsVerifier, not to this module.
 //
 // Results are cached for CacheTTL duration.
 func (d *Discoverer) DiscoverModels() []string {
@@ -144,7 +159,19 @@ func (d *Discoverer) DiscoverModels() []string {
 		}
 	}
 
-	// Tier 3: Hardcoded fallback
+	// Tier 3: Hardcoded fallback.
+	//
+	// NOTE (iter-53, CONST-036): the field is now marked deprecated in the
+	// ProviderConfig struct and per-provider FallbackModels lists are owed
+	// removal across all ~40 providers. Until that sweep lands (each
+	// provider's TestGetCapabilities needs an httptest fixture like
+	// pkg/providers/ollama / pkg/providers/venice already have — that's
+	// ~75 tests, multi-iteration scope tracked as
+	// `#fallback-tier-removed-needs-httptest-fixture`), this tier is still
+	// consulted as a runtime-compatibility shim. The fact that the suite
+	// goes from 49/0 → 124/75 the moment this path returns nil is itself
+	// the auditable evidence that the hardcoded lists were structural
+	// bluffs (assertions that pass against drifted catalogues).
 	if len(d.config.FallbackModels) > 0 {
 		d.cacheModels(d.config.FallbackModels, 3)
 		d.log.WithFields(logrus.Fields{
@@ -152,14 +179,15 @@ func (d *Discoverer) DiscoverModels() []string {
 			"count":    len(d.config.FallbackModels),
 			"tier":     3,
 			"source":   "fallback",
-		}).Info("Using fallback model list")
+		}).Info("Using fallback model list (CONST-036-deprecated path; see ticket #fallback-tier-removed-needs-httptest-fixture)")
 	}
 
 	return d.config.FallbackModels
 }
 
 // GetCachedModels returns the currently cached models without triggering discovery.
-// Falls back to FallbackModels if cache is empty.
+// Falls back to FallbackModels if cache is empty (CONST-036-deprecated path —
+// see ticket #fallback-tier-removed-needs-httptest-fixture).
 func (d *Discoverer) GetCachedModels() []string {
 	d.mu.RLock()
 	defer d.mu.RUnlock()

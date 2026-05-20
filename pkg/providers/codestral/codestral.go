@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -498,7 +499,7 @@ func (p *CodestralProvider) GetCapabilities() *models.ProviderCapabilities {
 			"provider":     "Codestral",
 			"model_family": "Mistral",
 			"api_version":  "v1",
-			"note":         "Mistral AI code-focused model",
+			"note":         i18n.Tr(context.Background(), "provider.codestral.description", nil),
 		},
 	}
 }

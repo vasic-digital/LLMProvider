@@ -157,7 +157,9 @@ func TestPublicAIProvider_ValidateConfigMissingAPIKey(t *testing.T) {
 
 	valid, errors := provider.ValidateConfig(nil)
 	assert.False(t, valid)
-	assert.Contains(t, errors, "API key is required")
+	// CONST-046 round-367: ValidateConfig errors flow through the i18n
+	// seam; with NoopTranslator (test default) the message ID echoes.
+	assert.Contains(t, errors, "llmprovider_validate_api_key_required")
 }
 
 func TestPublicAIProvider_ValidateConfigMissingBaseURL(t *testing.T) {
@@ -169,7 +171,7 @@ func TestPublicAIProvider_ValidateConfigMissingBaseURL(t *testing.T) {
 
 	valid, errors := provider.ValidateConfig(nil)
 	assert.False(t, valid)
-	assert.Contains(t, errors, "base URL is required")
+	assert.Contains(t, errors, "llmprovider_validate_base_url_required")
 }
 
 func TestPublicAIProvider_ValidateConfigMissingModel(t *testing.T) {
@@ -181,7 +183,7 @@ func TestPublicAIProvider_ValidateConfigMissingModel(t *testing.T) {
 
 	valid, errors := provider.ValidateConfig(nil)
 	assert.False(t, valid)
-	assert.Contains(t, errors, "model is required")
+	assert.Contains(t, errors, "llmprovider_validate_model_required")
 }
 
 func TestPublicAIProvider_IsRetryableStatus(t *testing.T) {

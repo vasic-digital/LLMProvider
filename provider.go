@@ -2,7 +2,7 @@ package llmprovider
 
 import (
 	"context"
-	"digital.vasic.models"
+	"digital.vasic.llmprovider/pkg/models"
 )
 
 // LLMProvider defines an interface for LLM providers to integrate with the facade.

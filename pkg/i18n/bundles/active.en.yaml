@@ -1,0 +1,89 @@
+# pkg/i18n bundle — active English (en) locale for LLMProvider.
+#
+# Every entry maps a CONST-046-migrated hardcoded literal in
+# LLMProvider's provider ValidateConfig paths to a message ID resolved
+# at runtime via Translator.T. A consuming application wires a real
+# locale-aware Translator at boot via i18n.SetTranslator; the in-package
+# NoopTranslator echoes the message ID verbatim for unit tests and
+# backward compatibility.
+#
+# Naming convention: llmprovider_<area>_<short_description>. All IDs
+# prefixed with llmprovider_ to avoid namespace collision with other
+# packages' bundles when loaded into the same go-i18n.Bundle.
+#
+# Round-337 §11.4 anti-bluff sweep (2026-05-19): migrated the
+# user-facing ValidateConfig validation error messages — the strings a
+# consuming application surfaces to an end user when provider
+# configuration is incomplete or malformed. These were hardcoded
+# English literals, silently breaking the validation experience for
+# non-English users (CONST-046).
+#
+# Round-338 §11.4 anti-bluff sweep (2026-05-19): migrated the
+# provider-description strings surfaced to end users in model /
+# provider listings (provider.* keys below).
+#
+# Round-341 merge-first reconciliation (CONST-061 §11.4.41): the
+# round-337 (HelixDevelopment lineage) and round-338 (vasic-digital
+# lineage) i18n sweeps landed independently on diverged remotes; this
+# bundle is the union of both — disjoint key namespaces, no overlap.
+#
+# Round-379 §11.4 anti-bluff sweep (2026-05-19): migrated 22 residual
+# ValidateConfig error literals across 10 provider files (ai21 not in
+# scope this round; cohere, deepseek, mistral, zai, claude, qwen,
+# hyperbolic, kilo, kimi, modal) onto the existing message-ID keys.
+# Adds llmprovider_validate_oauth_creds_invalid for the OAuth-
+# credentials-invalid validation error surfaced by claude + qwen.
+
+llmprovider_validate_api_key_required:
+  other: "API key is required"
+
+llmprovider_validate_api_key_required_groq:
+  other: "API key is required (Groq API key starts with 'gsk_')"
+
+llmprovider_validate_api_key_format_groq:
+  other: "Invalid API key format (should start with 'gsk_')"
+
+llmprovider_validate_api_key_format_xai:
+  other: "Invalid API key format (should start with 'xai-')"
+
+llmprovider_validate_base_url_required:
+  other: "base URL is required"
+
+llmprovider_validate_model_required:
+  other: "model is required"
+
+llmprovider_validate_account_id_required:
+  other: "Account ID is required"
+
+llmprovider_validate_oauth_reader_required:
+  other: "OAuth credential reader is required"
+
+llmprovider_validate_oauth_creds_invalid:
+  other: "valid OAuth credentials are required"
+
+llmprovider_validate_opencode_api_key_required:
+  other: "OPENCODE_API_KEY is required for non-free models"
+
+# --- Round-338 provider-description strings ---
+provider.cerebras.description: "Ultra-fast inference on Cerebras hardware"
+provider.cloudflare.description: "Cloudflare Workers AI"
+provider.codestral.description: "Mistral AI code-focused model"
+provider.hyperbolic.description: "Hyperbolic AI inference platform"
+provider.kilo.description: "Kilo Code AI assistant"
+provider.kimi.description: "Moonshot AI Kimi chat model"
+provider.modal.description: "Modal serverless inference platform"
+provider.nia.description: "Nia AI assistant"
+provider.nlpcloud.description: "NLP Cloud AI inference platform"
+provider.novita.description: "Novita AI inference platform"
+provider.nvidia.description: "NVIDIA NIM API for LLM inference"
+provider.publicai.description: "Swiss AI Apertus - open-source LLM via Public AI Gateway"
+provider.sambanova.description: "SambaNova AI inference platform"
+provider.sarvam.description: "Sarvam AI India LLM"
+provider.siliconflow.description: "SiliconFlow AI inference platform"
+provider.upstage.description: "Upstage Solar LLM"
+provider.vulavula.description: "Vulavula AI - African LLM"
+provider.zhipu.description: "Zhipu AI GLM models"
+provider.zen.description: "OpenCode Zen gateway - Free models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)"
+provider.junie.display_name: "Junie AI Coding Agent"
+provider.junie.description: "JetBrains' AI-powered coding agent with BYOK support for 22+ LLM providers"
+provider.gemini.description: "Google's Gemini models with API, CLI headless, and ACP access methods"

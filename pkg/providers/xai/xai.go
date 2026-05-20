@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -395,9 +396,9 @@ func (p *Provider) GetCapabilities() *models.ProviderCapabilities {
 func (p *Provider) ValidateConfig(config map[string]interface{}) (bool, []string) {
 	var errors []string
 	if p.apiKey == "" {
-		errors = append(errors, "API key is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_required", nil))
 	} else if !strings.HasPrefix(p.apiKey, "xai-") {
-		errors = append(errors, "Invalid API key format (should start with 'xai-')")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_format_xai", nil))
 	}
 	return len(errors) == 0, errors
 }

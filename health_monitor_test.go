@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"digital.vasic.models"
+	"digital.vasic.llmprovider/pkg/models"
 	"github.com/stretchr/testify/assert"
 )
 

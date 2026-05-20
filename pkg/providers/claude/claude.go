@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -785,23 +786,23 @@ func (p *ClaudeProvider) ValidateConfig(config map[string]interface{}) (bool, []
 	// For OAuth auth, we don't need API key - check OAuth credentials instead
 	if p.authType == AuthTypeOAuth {
 		if p.oauthCredReader == nil {
-			errors = append(errors, "OAuth credential reader is required")
+			errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_oauth_reader_required", nil))
 		} else if !p.oauthCredReader.HasValidClaudeCredentials() {
-			errors = append(errors, "valid OAuth credentials are required")
+			errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_oauth_creds_invalid", nil))
 		}
 	} else {
 		// API key auth
 		if p.apiKey == "" {
-			errors = append(errors, "API key is required")
+			errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_required", nil))
 		}
 	}
 
 	if p.baseURL == "" {
-		errors = append(errors, "base URL is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_base_url_required", nil))
 	}
 
 	if p.model == "" {
-		errors = append(errors, "model is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_model_required", nil))
 	}
 
 	return len(errors) == 0, errors

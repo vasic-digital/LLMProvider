@@ -3,7 +3,7 @@
 # LLMProvider per CONST-035 + CONST-050(B). Cascade per CONST-051(A).
 
 set -uo pipefail
-REPLICAS="${LLMPROVIDER_SCALING_REPLICA_URLS:-}"
+REPLICAS="${LLMPROVIDER_VD_SCALING_REPLICA_URLS:-}"
 REQS="${SCALING_REQS_PER_REPLICA:-50}"
 CONC="${SCALING_CONCURRENCY:-10}"
 MIN_PCT="${SCALING_MIN_PASS_PCT:-95}"
@@ -12,7 +12,7 @@ echo "=== LLMProvider Scaling Challenge ==="
 echo "  replicas=$REPLICAS reqs=$REQS conc=$CONC pass≥${MIN_PCT}%"
 
 if [[ -z "$REPLICAS" ]]; then
-    echo "[1/6] SKIP: LLMPROVIDER_SCALING_REPLICA_URLS unset — SKIP-OK: #env-single-replica"
+    echo "[1/6] SKIP: LLMPROVIDER_VD_SCALING_REPLICA_URLS unset — SKIP-OK: #env-single-replica"
     echo "=== LLMProvider Scaling Challenge: PASSED (SKIP-OK) ==="
     exit 0
 fi

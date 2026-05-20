@@ -1,4 +1,4 @@
-# LLMProvider Test Coverage Ledger (round-276)
+# LLMProvider Test Coverage Ledger (round-292, vasic-digital twin)
 
 This ledger maps the surface-area symbols of LLMProvider to the
 specific tests + Challenges that exercise them with positive
@@ -68,7 +68,7 @@ mutation would produce. Mutation pairing per §1.1 / CONST-050(A).
 
 | Challenge                                   | Purpose                                   | Mutation-paired? |
 |---------------------------------------------|-------------------------------------------|------------------|
-| `llmprovider_describe_challenge.sh`         | runner invariants (23 PASS)               | **YES** (round-276) |
+| `llmprovider_describe_challenge.sh`         | runner invariants (23 PASS)               | **YES** (round-292) |
 | `chaos_failure_injection_challenge.sh`      | runtime chaos resilience                  | env-gated        |
 | `ddos_health_flood_challenge.sh`            | DDoS health-flood resilience              | env-gated        |
 | `scaling_horizontal_challenge.sh`           | horizontal scale check                    | env-gated        |
@@ -96,9 +96,14 @@ LLMPROVIDER_MUTATE_RUNNER=1 go run ./challenges/runner/
 ## Cascade
 
 CONST-047 + CONST-051(A): this ledger is the LLMProvider-side
-realisation of the cross-org "equal codebase" mandate. The same
-ledger pattern lives in sibling submodules (LeakHub round-266,
-MCP_Module round-267, Models round-268, Ouroborous round-269,
-Planning round-270, conversation round-271, DebateOrchestrator
-round-272, HelixSpecifier round-273) and is bumped from the
-meta-repo on every round close-out.
+realisation of the cross-org "equal codebase" mandate. The vasic-
+digital twin's round-292 enrichment mirrors the HelixDevelopment
+twin's round-276 work; the two twins share source-code parity in
+pkg/circuit / pkg/health / pkg/retry / pkg/models but maintain
+divergent git histories per the round-276 finding. Sibling
+submodules carry the same ledger pattern: LeakHub (round 266),
+MCP_Module (round 267), Models (round 268), Ouroborous (round
+269), Planning (round 270), conversation (round 271),
+DebateOrchestrator (round 272), HelixSpecifier (round 273), TOON
+(round 286), VectorDB (round 287), Veritas (round 288), Watcher
+(round 289). Bumped from the meta-repo on every round close-out.

@@ -208,7 +208,13 @@ func NewProviderWithRetry(
 
 	p.discoverer = discovery.NewDiscoverer(discovery.ProviderConfig{
 		ProviderName:   "venice",
-		ModelsEndpoint: VeniceModelsURL,
+		// Honour the derived modelsURL (computed from the caller-supplied
+		// baseURL) so a custom baseURL — e.g. an httptest server in tests
+		// or a corporate proxy in production — actually reaches the
+		// discoverer. Previously this field was hard-wired to the
+		// production VeniceModelsURL, making the modelsURL derivation
+		// above dead-code from the discoverer's perspective.
+		ModelsEndpoint: modelsURL,
 		ModelsDevID:    "venice",
 		APIKey:         apiKey,
 		FallbackModels: []string{

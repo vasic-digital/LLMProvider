@@ -1425,7 +1425,9 @@ func TestClaudeProvider_ValidateConfig_OAuthWithoutReader(t *testing.T) {
 
 	valid, errs := provider.ValidateConfig(nil)
 	assert.False(t, valid)
-	assert.Contains(t, errs, "OAuth credential reader is required")
+	// CONST-046: ValidateConfig surfaces the i18n message ID resolved via
+	// the i18n.Tr seam (NoopTranslator echoes the ID verbatim in unit tests).
+	assert.Contains(t, errs, "llmprovider_validate_oauth_reader_required")
 }
 
 func TestClaudeProvider_CompleteStream_WithTextDelta(t *testing.T) {

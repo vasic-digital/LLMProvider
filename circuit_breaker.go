@@ -9,7 +9,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"digital.vasic.models"
+	"digital.vasic.llmprovider/pkg/models"
 )
 
 // CircuitState represents the state of the circuit breaker

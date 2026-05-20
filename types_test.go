@@ -1,7 +1,7 @@
 package llmprovider
 
 import (
-	"digital.vasic.models"
+	"digital.vasic.llmprovider/pkg/models"
 	"testing"
 )
 

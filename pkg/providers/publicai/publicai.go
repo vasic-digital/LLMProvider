@@ -14,6 +14,7 @@ import (
 	"digital.vasic.llmprovider/pkg/models"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"github.com/sirupsen/logrus"
 )
 
@@ -615,7 +616,7 @@ func (p *PublicAIProvider) GetCapabilities() *models.ProviderCapabilities {
 			"api_version":       "v1",
 			"recommended_temp":  "0.8",
 			"recommended_top_p": "0.9",
-			"note":              "Swiss AI Apertus - open-source LLM via Public AI Gateway",
+			"note":              i18n.Tr(context.Background(), "provider.publicai.description", nil),
 		},
 	}
 }
@@ -624,15 +625,15 @@ func (p *PublicAIProvider) ValidateConfig(config map[string]interface{}) (bool, 
 	var errors []string
 
 	if p.apiKey == "" {
-		errors = append(errors, "API key is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_required", nil))
 	}
 
 	if p.baseURL == "" {
-		errors = append(errors, "base URL is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_base_url_required", nil))
 	}
 
 	if p.model == "" {
-		errors = append(errors, "model is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_model_required", nil))
 	}
 
 	return len(errors) == 0, errors

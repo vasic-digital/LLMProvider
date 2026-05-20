@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # ddos_health_flood_challenge.sh — anti-bluff DDoS Challenge for
 # LLMProvider per CONST-035 + CONST-050(B). Submodule cascade per
-# CONST-051(A). Targets $LLMPROVIDER_HEALTH_URL.
+# CONST-051(A). Targets $LLMPROVIDER_VD_HEALTH_URL.
 
 set -uo pipefail
 
-HEALTH_URL="${LLMPROVIDER_HEALTH_URL:-}"
+HEALTH_URL="${LLMPROVIDER_VD_HEALTH_URL:-}"
 TOTAL_REQS="${DDOS_REQUESTS:-500}"
 CONCURRENCY="${DDOS_CONCURRENCY:-50}"
 TIMEOUT_SEC="${DDOS_TIMEOUT_SEC:-5}"
@@ -15,7 +15,7 @@ echo "=== LLMProvider DDoS Health-Flood Challenge ==="
 echo "  url=$HEALTH_URL total=$TOTAL_REQS conc=$CONCURRENCY pass≥${MIN_PASS_PCT}%"
 
 if [[ -z "$HEALTH_URL" ]]; then
-    echo "[1/5] SKIP: LLMPROVIDER_HEALTH_URL unset — SKIP-OK: #env-no-target"
+    echo "[1/5] SKIP: LLMPROVIDER_VD_HEALTH_URL unset — SKIP-OK: #env-no-target"
     echo "=== LLMProvider DDoS Challenge: PASSED (SKIP-OK) ==="
     exit 0
 fi

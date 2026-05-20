@@ -1,5 +1,21 @@
 # LLMProvider .gitignore — CONST-053 compliant
 # (cascaded from constitution submodule §11.4.30)
+# Round-341 merge-first reconciliation (CONST-061): union of the
+# round-292 vasic-digital twin and the HelixDevelopment lineage
+# .gitignore — every pattern from both kept.
+
+# Environment / secrets (CONST-042 §12.1 + CONST-053 class 4)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+id_rsa*
+id_ed25519*
+.netrc
+secrets/
+api_keys.sh
 
 # Build artefacts (CONST-053 class 1)
 /bin/
@@ -12,9 +28,12 @@ target/
 *.dll
 *.so
 *.dylib
+*.test
+*.out
 *.a
 *.o
-*.test
+*.class
+*.pyc
 vendor/
 
 # Cache files (CONST-053 class 2)
@@ -36,30 +55,19 @@ node_modules/
 *.orig
 *.rej
 
-# Sensitive-data files (CONST-053 class 4 + CONST-042 §12.1)
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.crt
-id_rsa*
-id_ed25519*
-.netrc
-secrets/
-api_keys.sh
+# OS / IDE personal state (CONST-053 class 6)
+.idea/
+.history/
+.vscode/
+.DS_Store
+Thumbs.db
 
 # Generated reports / logs (CONST-053 class 5)
 *.log
-*.out
 coverage.out
 htmlcov/
 reports/
 reports/demos/
 
-# OS / IDE personal state (CONST-053 class 6)
-.DS_Store
-Thumbs.db
-.idea/
-.history/
-.vscode/
+# Stray go-build artefacts at repo root
+/runner

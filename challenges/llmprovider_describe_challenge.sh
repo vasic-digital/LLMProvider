@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# llmprovider_describe_challenge.sh — round-276 anti-bluff
+# llmprovider_describe_challenge.sh — round-292 anti-bluff
 # wrapper around the in-process Challenge runner
-# (challenges/runner/main.go).
+# (challenges/runner/main.go). Mirrors the HelixDevelopment twin's
+# round-276 wrapper.
 #
 # Two-mode behaviour (CONST-050(A) paired-mutation; §1.1):
 #
@@ -35,7 +36,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MODULE_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 MODE="${1:-normal}"
-echo "=== LLMProvider Describe Challenge (round-276) ==="
+echo "=== LLMProvider Describe Challenge (round-292) ==="
 echo "  mode=${MODE}"
 echo "  module=${MODULE_DIR}"
 

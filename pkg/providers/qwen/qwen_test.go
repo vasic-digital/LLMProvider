@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -1058,7 +1059,7 @@ func TestQwenProvider_ValidateConfig(t *testing.T) {
 			model:     "qwen-turbo",
 			config:    map[string]interface{}{},
 			wantValid: false,
-			wantErrs:  []string{"API key is required"},
+			wantErrs:  []string{"llmprovider_validate_api_key_required"},
 		},
 		{
 			name:      "empty base URL - gets default",
@@ -1085,7 +1086,7 @@ func TestQwenProvider_ValidateConfig(t *testing.T) {
 			model:     "",
 			config:    map[string]interface{}{},
 			wantValid: false,
-			wantErrs:  []string{"API key is required"}, // Only API key error since baseURL and model get defaults
+			wantErrs:  []string{"llmprovider_validate_api_key_required"}, // Only API key error since baseURL and model get defaults; CONST-046 i18n message ID (NoopTranslator echo)
 		},
 	}
 
@@ -2048,9 +2049,11 @@ func TestQwenProvider_ValidateConfig_AllErrors(t *testing.T) {
 
 	valid, errs := provider.ValidateConfig(map[string]interface{}{})
 	assert.False(t, valid)
-	assert.Contains(t, errs, "API key is required")
-	assert.Contains(t, errs, "base URL is required")
-	assert.Contains(t, errs, "model is required")
+	// CONST-046: ValidateConfig surfaces i18n message IDs resolved via
+	// the i18n.Tr seam (NoopTranslator echoes the ID verbatim in unit tests).
+	assert.Contains(t, errs, "llmprovider_validate_api_key_required")
+	assert.Contains(t, errs, "llmprovider_validate_base_url_required")
+	assert.Contains(t, errs, "llmprovider_validate_model_required")
 	assert.Len(t, errs, 3)
 }
 
@@ -2367,4 +2370,34 @@ func BenchmarkQwenProvider_IsAuthRetryableStatus(b *testing.B) {
 		isAuthRetryableStatus(403)
 		isAuthRetryableStatus(200)
 	}
+}
+
+// TestQwenProvider_ValidateConfig_I18nPairedMutation is the round-379
+// §1.1 paired-mutation guard for the CONST-046 i18n migration. It wires
+// a BundleTranslator whose entries DIFFER from the source literals and
+// asserts ValidateConfig surfaces the MUTATED text — proving the
+// provider resolves validation errors through the i18n.Tr seam at
+// runtime rather than holding a stale hardcoded copy. If the migration
+// were a bluff (literal still hardcoded), the mutated bundle would have
+// no effect and this test would FAIL.
+func TestQwenProvider_ValidateConfig_I18nPairedMutation(t *testing.T) {
+	const (
+		mutKey   = "MUTATED-qwen-api-key-required"
+		mutURL   = "MUTATED-qwen-base-url-required"
+		mutModel = "MUTATED-qwen-model-required"
+	)
+	bundle := "llmprovider_validate_api_key_required:\n  other: \"" + mutKey + "\"\n" +
+		"llmprovider_validate_base_url_required:\n  other: \"" + mutURL + "\"\n" +
+		"llmprovider_validate_model_required:\n  other: \"" + mutModel + "\"\n"
+	bt, err := i18n.NewBundleTranslatorFromBytes([]byte(bundle))
+	require.NoError(t, err, "parse mutated bundle")
+	i18n.SetTranslator(bt)
+	t.Cleanup(func() { i18n.SetTranslator(nil) })
+
+	provider := &QwenProvider{apiKey: "", baseURL: "", model: ""}
+	valid, errs := provider.ValidateConfig(map[string]interface{}{})
+	assert.False(t, valid)
+	assert.Contains(t, errs, mutKey, "ValidateConfig must resolve api-key error through i18n seam")
+	assert.Contains(t, errs, mutURL, "ValidateConfig must resolve base-url error through i18n seam")
+	assert.Contains(t, errs, mutModel, "ValidateConfig must resolve model error through i18n seam")
 }

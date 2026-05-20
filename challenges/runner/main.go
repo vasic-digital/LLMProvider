@@ -1,33 +1,43 @@
-// Command runner is the LLMProvider round-276 Challenge runner.
+// Command runner is the LLMProvider round-292 Challenge runner
+// (vasic-digital twin; mirrors the HelixDevelopment twin enriched
+// in round-276).
 //
-// It exercises the real circuit.CircuitBreaker, real health.HealthMonitor,
-// and real retry.RetryConfig surfaces across five locale fixtures. Every
-// PASS line is backed by a runtime invariant — never a metadata-only check
-// (CONST-035 / Article XI §11.9, CONST-050(A) paired mutation per §1.1).
+// It exercises the real circuit.CircuitBreaker, real
+// health.HealthMonitor, and real retry.RetryConfig surfaces across
+// five locale fixtures. Every PASS line is backed by a runtime
+// invariant — never a metadata-only check
+// (CONST-035 / Article XI §11.9, CONST-050(A) paired mutation
+// per §1.1).
 //
 // Anti-bluff invariants enforced:
 //
-//  1. CircuitBreaker initial state is Closed (default state contract).
-//  2. CircuitBreaker.IsClosed() == true on construction; IsOpen() == false.
+//  1. CircuitBreaker initial state is Closed (default state
+//     contract).
+//  2. CircuitBreaker.IsClosed() == true on construction;
+//     IsOpen() == false.
 //  3. After N=FailureThreshold consecutive failures, the breaker
 //     transitions Closed -> Open and short-circuits subsequent
 //     Complete() calls with ErrCircuitOpen (real fault-tolerance
 //     behaviour, not a stubbed exit code).
 //  4. HealthMonitor.GetHealth() reports Unknown for a freshly
-//     registered provider (no false "healthy" before first probe).
-//  5. HealthMonitor.RecordFailure() flips the cached health status
-//     from Unknown towards Unhealthy after UnhealthyThreshold hits,
-//     and the listener fires with old/new states.
-//  6. RetryConfig.IsRetryableStatusCode covers the documented HTTP
-//     status set (429/500/502/503/504) and rejects 200/400/404.
+//     registered provider (no false "healthy" before first
+//     probe).
+//  5. HealthMonitor.RecordFailure() flips the cached health
+//     status from Unknown towards Unhealthy after
+//     UnhealthyThreshold hits, and the listener fires with
+//     old/new states.
+//  6. RetryConfig.IsRetryableStatusCode covers the documented
+//     HTTP status set (429/500/502/503/504) and rejects
+//     200/400/404.
 //  7. RetryConfig.CalculateBackoff respects InitialDelay,
 //     Multiplier and MaxDelay (no infinite backoff growth).
 //
 // Mutation hook: when env LLMPROVIDER_MUTATE_RUNNER=1 is set, the
-// runner inverts invariant (3) (treats a breaker that REMAINED CLOSED
-// after 5 forced failures as PASS instead of FAIL). Paired Challenge
-// wrapper asserts the runner exits non-zero under mutation, which
-// the wrapper rewrites to exit 99 (paired-mutation success).
+// runner inverts invariant (3) (treats a breaker that REMAINED
+// CLOSED after 5 forced failures as PASS instead of FAIL).
+// Paired Challenge wrapper asserts the runner exits non-zero
+// under mutation, which the wrapper rewrites to exit 99
+// (paired-mutation success).
 //
 // Verbatim 2026-05-19 operator mandate (preserved per
 // CONST-049 §11.4.17):
@@ -64,7 +74,8 @@ import (
 
 // fixture is a 7-field projection of challenges/fixtures/<locale>.yaml.
 // Minimal in-process parse keeps the runner free of new yaml deps
-// (CONST-051(B): no transitive deps creeping into a reusable submodule).
+// (CONST-051(B): no transitive deps creeping into a reusable
+// submodule).
 type fixture struct {
 	locale                    string
 	providerID                string
@@ -75,13 +86,14 @@ type fixture struct {
 	expectRetryInitialDelayMS int
 }
 
-// controllableProvider is the smallest concrete LLMProvider that satisfies
-// the package interface — used here ONLY to drive the real
-// circuit.CircuitBreaker through its failure-budget state machine.
-// Production providers (Ollama, OpenAI, …) live in pkg/providers/*; this
-// stub exists exclusively to flip-flop the breaker and prove the breaker
-// REALLY observes the failures it claims to count. The flag is atomic
-// so concurrent breaker probes never race.
+// controllableProvider is the smallest concrete LLMProvider that
+// satisfies the package interface — used here ONLY to drive the
+// real circuit.CircuitBreaker through its failure-budget state
+// machine. Production providers (Ollama, OpenAI, …) live in
+// pkg/providers/*; this stub exists exclusively to flip-flop the
+// breaker and prove the breaker REALLY observes the failures it
+// claims to count. The flag is atomic so concurrent breaker
+// probes never race.
 type controllableProvider struct {
 	id        string
 	failCount atomic.Int32 // increments per Complete call
@@ -135,7 +147,7 @@ func main() {
 }
 
 func run(out io.Writer) int {
-	fmt.Fprintln(out, "=== LLMProvider Challenge Runner (round-276) ===")
+	fmt.Fprintln(out, "=== LLMProvider Challenge Runner (round-292) ===")
 
 	fixDir := os.Getenv("LLMPROVIDER_FIXTURES_DIR")
 	if fixDir == "" {
@@ -203,7 +215,7 @@ func run(out io.Writer) int {
 			context.Background(), 5*time.Second)
 		for i := 0; i < f.expectFailureThreshold; i++ {
 			_, _ = cb.Complete(ctx, &models.LLMRequest{
-				ID: f.providerID + "-fail",
+				ID:     f.providerID + "-fail",
 				Prompt: f.prompt})
 		}
 		cancel()

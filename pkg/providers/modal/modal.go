@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -432,7 +433,7 @@ func (p *ModalProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		Metadata: map[string]string{
 			"provider": "Modal",
-			"note":     "Modal serverless inference platform",
+			"note":     i18n.Tr(context.Background(), "provider.modal.description", nil),
 		},
 	}
 }
@@ -440,7 +441,7 @@ func (p *ModalProvider) GetCapabilities() *models.ProviderCapabilities {
 func (p *ModalProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
 	var errors []string
 	if p.apiKey == "" {
-		errors = append(errors, "API key is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_required", nil))
 	}
 	return len(errors) == 0, errors
 }

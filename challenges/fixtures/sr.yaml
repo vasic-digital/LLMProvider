@@ -1,4 +1,4 @@
-# LLMProvider round-276 challenge fixture — Serbian (sr).
+# LLMProvider round-292 challenge fixture — Serbian (sr).
 #
 # Drives the Challenge runner at challenges/runner/main.go through a
 # real circuit-breaker + health-monitor + retry flow. Anti-bluff:

@@ -303,14 +303,18 @@ func TestValidateConfig(t *testing.T) {
 			assert.Equal(t, tt.expectValid, valid)
 			assert.Len(t, errs, tt.expectErrLen)
 
+			// CONST-046 round-337: ValidateConfig errors flow
+			// through the pkg/i18n seam. With no Translator wired
+			// the NoopTranslator echoes the message ID verbatim —
+			// a loud, visible fallback. Assert on the message IDs.
 			if tt.apiKey == "" && !valid {
-				assert.Contains(t, errs, "API key is required")
+				assert.Contains(t, errs, "llmprovider_validate_api_key_required")
 			}
 			if tt.baseURL == "" && !valid {
-				assert.Contains(t, errs, "base URL is required")
+				assert.Contains(t, errs, "llmprovider_validate_base_url_required")
 			}
 			if tt.model == "" && !valid {
-				assert.Contains(t, errs, "model is required")
+				assert.Contains(t, errs, "llmprovider_validate_model_required")
 			}
 		})
 	}

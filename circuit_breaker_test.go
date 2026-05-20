@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 
-	"digital.vasic.models"
+	"digital.vasic.llmprovider/pkg/models"
 )
 
 // failingProvider is a mock that can be configured to fail

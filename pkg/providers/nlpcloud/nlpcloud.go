@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -440,7 +441,7 @@ func (p *NLPCloudProvider) GetCapabilities() *models.ProviderCapabilities {
 		},
 		Metadata: map[string]string{
 			"provider": "NLPCloud",
-			"note":     "NLP Cloud AI inference platform",
+			"note":     i18n.Tr(context.Background(), "provider.nlpcloud.description", nil),
 		},
 	}
 }
@@ -448,7 +449,7 @@ func (p *NLPCloudProvider) GetCapabilities() *models.ProviderCapabilities {
 func (p *NLPCloudProvider) ValidateConfig(config map[string]interface{}) (bool, []string) {
 	var errors []string
 	if p.apiKey == "" {
-		errors = append(errors, "API key is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_required", nil))
 	}
 	return len(errors) == 0, errors
 }

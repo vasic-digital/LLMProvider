@@ -477,7 +477,7 @@ func TestZAIProvider_ValidateConfig(t *testing.T) {
 			baseURL:     "https://api.z.ai/v1",
 			model:       "z-ai-base",
 			expectValid: false,
-			expectedErr: []string{"API key is required"},
+			expectedErr: []string{"llmprovider_validate_api_key_required"},
 		},
 		{
 			name:        "empty base URL uses default",
@@ -501,7 +501,7 @@ func TestZAIProvider_ValidateConfig(t *testing.T) {
 			baseURL:     "",
 			model:       "",
 			expectValid: false,
-			expectedErr: []string{"API key is required"}, // Only API key error since others have defaults
+			expectedErr: []string{"llmprovider_validate_api_key_required"}, // Only API key error since others have defaults; CONST-046 i18n message ID (NoopTranslator echo)
 		},
 	}
 

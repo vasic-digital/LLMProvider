@@ -16,6 +16,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -1015,7 +1016,7 @@ func (p *ZenProvider) GetCapabilities() *models.ProviderCapabilities {
 			"provider":     "OpenCode Zen",
 			"model_family": "Mixed",
 			"api_version":  "v1",
-			"note":         "OpenCode Zen gateway - Free models (Big Pickle, Grok Code Fast, GLM 4.7, GPT 5 Nano)",
+			"note":         i18n.Tr(context.Background(), "provider.zen.description", nil),
 			"free_tier":    "true",
 			"base_url":     ZenAPIURL,
 		},
@@ -1031,16 +1032,16 @@ func (p *ZenProvider) ValidateConfig(config map[string]interface{}) (bool, []str
 	if p.apiKey == "" && !p.anonymousMode {
 		// Check if the model is a free model - if so, anonymous mode should be enabled
 		if !isFreeModel(p.model) {
-			errors = append(errors, "OPENCODE_API_KEY is required for non-free models")
+			errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_opencode_api_key_required", nil))
 		}
 	}
 
 	if p.baseURL == "" {
-		errors = append(errors, "base URL is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_base_url_required", nil))
 	}
 
 	if p.model == "" {
-		errors = append(errors, "model is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_model_required", nil))
 	}
 
 	return len(errors) == 0, errors

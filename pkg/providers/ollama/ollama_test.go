@@ -277,12 +277,36 @@ func TestOllamaProvider_HealthCheck_NetworkError(t *testing.T) {
 }
 
 func TestOllamaProvider_GetCapabilities(t *testing.T) {
-	provider := NewOllamaProvider("", "")
+	// CONST-035 anti-bluff: this test previously instantiated the provider
+	// with NewOllamaProvider("", "") which defaults to
+	// http://localhost:11434 — meaning the assertion accidentally
+	// exercised whichever local Ollama daemon the operator happened to
+	// have running, drifting whenever the daemon's installed-model list
+	// changed (or asserting against an offline fallback when no daemon
+	// was running). The bluff: a green test depended on the operator's
+	// daemon state, not on the provider's wiring. Replace with an
+	// httptest server returning a known catalogue so we verify the
+	// discovery pipeline plumbs models from API → caps.SupportedModels.
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/tags" {
+			http.Error(w, "unexpected path", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"models":[{"name":"llama2"},{"name":"mistral"},{"name":"codellama"}]}`))
+	}))
+	defer server.Close()
+
+	provider := NewOllamaProvider(server.URL, "llama2")
 	caps := provider.GetCapabilities()
 
 	assert.NotNil(t, caps)
+	// Positive evidence: discovery pulled the known catalogue from the
+	// controlled endpoint. If the discovery wiring breaks, this list
+	// will be empty or missing entries.
 	assert.Contains(t, caps.SupportedModels, "llama2")
 	assert.Contains(t, caps.SupportedModels, "mistral")
+	assert.Contains(t, caps.SupportedModels, "codellama")
 	assert.Contains(t, caps.SupportedFeatures, "text_completion")
 	assert.Contains(t, caps.SupportedFeatures, "streaming")
 	assert.True(t, caps.SupportsStreaming)

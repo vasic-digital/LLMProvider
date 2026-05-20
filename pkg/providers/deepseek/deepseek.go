@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -621,15 +622,15 @@ func (p *DeepSeekProvider) ValidateConfig(config map[string]interface{}) (bool, 
 	var errors []string
 
 	if p.apiKey == "" {
-		errors = append(errors, "API key is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_api_key_required", nil))
 	}
 
 	if p.baseURL == "" {
-		errors = append(errors, "base URL is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_base_url_required", nil))
 	}
 
 	if p.model == "" {
-		errors = append(errors, "model is required")
+		errors = append(errors, i18n.Tr(context.Background(), "llmprovider_validate_model_required", nil))
 	}
 
 	return len(errors) == 0, errors
