@@ -568,7 +568,11 @@ func TestValidateConfig_EmptyKey(t *testing.T) {
 	valid, errs := p.ValidateConfig(nil)
 	assert.False(t, valid)
 	assert.Len(t, errs, 1)
-	assert.Contains(t, errs[0], "API key is required")
+	// CONST-046 round-441: the api-key error is routed through the i18n
+	// seam. With no Translator wired the NoopTranslator echoes the
+	// message ID verbatim. Localized-string coverage lives in
+	// githubmodels_validateconfig_i18n_test.go.
+	assert.Equal(t, "llmprovider_validate_api_key_required_githubmodels", errs[0])
 }
 
 func TestRetry_RateLimited(t *testing.T) {

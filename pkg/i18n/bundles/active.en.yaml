@@ -87,3 +87,25 @@ provider.zen.description: "OpenCode Zen gateway - Free models (Big Pickle, Grok 
 provider.junie.display_name: "Junie AI Coding Agent"
 provider.junie.description: "JetBrains' AI-powered coding agent with BYOK support for 22+ LLM providers"
 provider.gemini.description: "Google's Gemini models with API, CLI headless, and ACP access methods"
+
+# --- Round-441 §11.4 anti-bluff sweep (2026-05-20): migrated 9 residual
+# user-facing literals — provider-specific ValidateConfig hints
+# (githubmodels, venice), the Ollama streaming-error response Content
+# strings an end user sees in place of an LLM completion, and the
+# OAuth-product-restriction message Claude surfaces when a Claude Code
+# CLI token is used for general API access (CONST-046). The {{error}}
+# placeholder carries the underlying error text.
+llmprovider_validate_api_key_required_githubmodels:
+  other: "API key is required (GitHub PAT with Models access)"
+
+llmprovider_validate_api_key_required_venice:
+  other: "API key is required (set VENICE_API_KEY)"
+
+llmprovider_ollama_response_error:
+  other: "Error: {{error}}"
+
+llmprovider_ollama_response_decode_error:
+  other: "Error: failed to decode response: {{error}}"
+
+llmprovider_claude_oauth_product_restricted:
+  other: "OAuth tokens from Claude Code CLI are product-restricted and cannot be used for general API access. Use an API key from console.anthropic.com instead."

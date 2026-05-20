@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
+	"digital.vasic.llmprovider/pkg/i18n"
 	"digital.vasic.llmprovider/pkg/models"
 )
 
@@ -446,10 +447,9 @@ func (p *Provider) ValidateConfig(
 	var errors []string
 
 	if p.apiKey == "" {
-		errors = append(
-			errors,
-			"API key is required (set VENICE_API_KEY)",
-		)
+		// CONST-046 round-441: validation error routed through i18n.
+		errors = append(errors, i18n.Tr(context.Background(),
+			"llmprovider_validate_api_key_required_venice", nil))
 	}
 
 	return len(errors) == 0, errors

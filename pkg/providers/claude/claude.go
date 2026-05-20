@@ -314,7 +314,9 @@ func (p *ClaudeProvider) Complete(ctx context.Context, req *models.LLMRequest) (
 		// Check for OAuth restriction error
 		if strings.Contains(bodyStr, OAuthRestrictionError) {
 			return nil, &OAuthRestrictionErr{
-				Message: "OAuth tokens from Claude Code CLI are product-restricted and cannot be used for general API access. Use an API key from console.anthropic.com instead.",
+				// CONST-046 round-441: OAuth-restriction message routed through i18n.
+				Message: i18n.Tr(context.Background(),
+					"llmprovider_claude_oauth_product_restricted", nil),
 			}
 		}
 		return nil, fmt.Errorf("Claude API error: %d - %s", resp.StatusCode, bodyStr)

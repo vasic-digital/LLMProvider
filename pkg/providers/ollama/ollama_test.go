@@ -196,7 +196,11 @@ func TestOllamaProvider_CompleteStream_Error(t *testing.T) {
 
 	// Read first response (should be error)
 	resp := <-ch
-	assert.Contains(t, resp.Content, "Error:")
+	// CONST-046 round-441: the decode-error response Content is routed
+	// through the i18n seam. With no Translator wired the NoopTranslator
+	// echoes the message ID verbatim. Localized-string coverage lives in
+	// ollama_responseerror_i18n_test.go.
+	assert.Equal(t, "llmprovider_ollama_response_decode_error", resp.Content)
 	assert.Equal(t, "error", resp.FinishReason)
 }
 
