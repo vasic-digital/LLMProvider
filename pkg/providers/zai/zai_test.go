@@ -1134,3 +1134,32 @@ func TestZAIProvider_ToolCalls(t *testing.T) {
 	assert.Equal(t, "get_weather", resp.ToolCalls[0].Function.Name)
 	assert.Equal(t, `{"location": "Beijing"}`, resp.ToolCalls[0].Function.Arguments)
 }
+
+// TestZAIProvider_TunedTransport verifies the speed-programme P5-T03
+// HTTP/2 + connection-pool tuning is applied to both the request
+// client and the streaming client, and that the streaming client is
+// shared (not re-created per call).
+func TestZAIProvider_TunedTransport(t *testing.T) {
+	p := NewZAIProvider("test-key", "", "glm-4.5")
+
+	require.NotNil(t, p.httpClient, "httpClient must be set")
+	require.NotNil(t, p.streamClient, "streamClient must be set")
+
+	for name, c := range map[string]*http.Client{
+		"httpClient": p.httpClient, "streamClient": p.streamClient,
+	} {
+		tr, ok := c.Transport.(*http.Transport)
+		require.Truef(t, ok, "%s transport must be *http.Transport", name)
+		assert.Truef(t, tr.ForceAttemptHTTP2,
+			"%s must force HTTP/2", name)
+		assert.GreaterOrEqualf(t, tr.MaxIdleConnsPerHost, 32,
+			"%s must widen per-host idle pool", name)
+	}
+
+	// The streaming client carries no overall deadline.
+	assert.Equal(t, time.Duration(0), p.streamClient.Timeout,
+		"streamClient must have no timeout")
+	// The request client keeps its 60s deadline.
+	assert.Equal(t, 60*time.Second, p.httpClient.Timeout,
+		"httpClient must keep its 60s timeout")
+}

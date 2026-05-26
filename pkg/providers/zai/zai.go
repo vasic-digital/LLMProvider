@@ -42,12 +42,26 @@ const ZAIEndpointInternational = "https://api.z.ai/api/paas/v4"
 
 // ZAIProvider implements the LLMProvider interface for Z.AI
 type ZAIProvider struct {
-	apiKey      string
-	baseURL     string
-	model       string
-	httpClient  *http.Client
-	retryConfig RetryConfig
-	discoverer  *discovery.Discoverer
+	apiKey       string
+	baseURL      string
+	model        string
+	httpClient   *http.Client
+	streamClient *http.Client
+	retryConfig  RetryConfig
+	discoverer   *discovery.Discoverer
+}
+
+// newTunedTransport returns an *http.Transport tuned for repeated
+// requests to a single API host: HTTP/2 negotiation is forced and the
+// per-host idle-connection pool is widened so bursts of calls reuse
+// warm TLS connections instead of paying a fresh handshake each time.
+func newTunedTransport() *http.Transport {
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.ForceAttemptHTTP2 = true
+	t.MaxIdleConns = 100
+	t.MaxIdleConnsPerHost = 32
+	t.IdleConnTimeout = 90 * time.Second
+	return t
 }
 
 // ZAIRequest represents a request to the Z.AI API
@@ -182,7 +196,14 @@ func NewZAIProviderWithRetry(apiKey, baseURL, model string, retryConfig RetryCon
 		baseURL: baseURL,
 		model:   model,
 		httpClient: &http.Client{
-			Timeout: 60 * time.Second,
+			Timeout:   60 * time.Second,
+			Transport: newTunedTransport(),
+		},
+		// Streaming responses have no overall deadline, but they still
+		// benefit from the shared tuned transport's warm connection
+		// pool — a per-call &http.Client{} pooled nothing.
+		streamClient: &http.Client{
+			Transport: newTunedTransport(),
 		},
 		retryConfig: retryConfig,
 	}
@@ -385,9 +406,9 @@ func (z *ZAIProvider) makeStreamingRequest(ctx context.Context, req *ZAIRequest)
 	httpReq.Header.Set("Content-Type", "application/json")
 	httpReq.Header.Set("Accept", "text/event-stream")
 
-	// Use a client without timeout for streaming
-	streamClient := &http.Client{}
-	resp, err := streamClient.Do(httpReq)
+	// Use the shared no-timeout streaming client (tuned transport,
+	// warm connection pool) rather than a fresh per-call client.
+	resp, err := z.streamClient.Do(httpReq)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request failed: %w", err)
 	}
