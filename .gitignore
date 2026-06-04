@@ -71,3 +71,6 @@ reports/demos/
 
 # Stray go-build artefacts at repo root
 /runner
+
+# Test/QA run artefacts (CONST-053 class 5 — regenerable by re-running the suite)
+qa-results/
