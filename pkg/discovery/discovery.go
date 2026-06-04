@@ -1,9 +1,15 @@
-// Package discovery provides 3-tier dynamic model discovery for LLM providers.
+// Package discovery provides dynamic model discovery for LLM providers.
 //
 // Discovery tiers:
 //   - Tier 1: Query provider's own API (e.g., /v1/models) for available models
 //   - Tier 2: Query models.dev API for provider's model catalog
-//   - Tier 3: Fall back to hardcoded known models
+//
+// A former Tier 3 (hardcoded known-models fallback) was REMOVED per CONST-036:
+// LLMsVerifier is the Single Source of Truth for the canonical per-provider
+// model catalogue, and NO hardcoded model list may be served as authoritative.
+// When neither live tier yields models, discovery returns nil so the caller
+// surfaces the unavailability honestly rather than handing the user a stale
+// catalogue they may not be able to invoke.
 //
 // Results are cached with configurable TTL to avoid excessive API calls.
 package discovery
@@ -159,40 +165,42 @@ func (d *Discoverer) DiscoverModels() []string {
 		}
 	}
 
-	// Tier 3: Hardcoded fallback.
+	// Tier 3 (hardcoded fallback) is REMOVED per CONST-036.
 	//
-	// NOTE (iter-53, CONST-036): the field is now marked deprecated in the
-	// ProviderConfig struct and per-provider FallbackModels lists are owed
-	// removal across all ~40 providers. Until that sweep lands (each
-	// provider's TestGetCapabilities needs an httptest fixture like
-	// pkg/providers/ollama / pkg/providers/venice already have — that's
-	// ~75 tests, multi-iteration scope tracked as
-	// `#fallback-tier-removed-needs-httptest-fixture`), this tier is still
-	// consulted as a runtime-compatibility shim. The fact that the suite
-	// goes from 49/0 → 124/75 the moment this path returns nil is itself
-	// the auditable evidence that the hardcoded lists were structural
-	// bluffs (assertions that pass against drifted catalogues).
+	// LLMsVerifier is the Single Source of Truth for the canonical
+	// per-provider model catalogue; this module MUST NOT serve a hardcoded
+	// list as if it were authoritative. Hardcoded lists drift, so returning
+	// one when live discovery is unreachable is a structural bluff: the user
+	// is handed model IDs they may not actually be able to invoke. The
+	// deprecated d.config.FallbackModels field is NO LONGER CONSULTED here
+	// (it is retained only so existing provider constructors keep compiling
+	// without a ~40-file sweep — see its doc comment in ProviderConfig).
+	//
+	// When neither Tier 1 (provider API) nor Tier 2 (models.dev) yields
+	// models, DiscoverModels returns nil. The caller MUST surface that as
+	// "models unavailable right now" — NEVER as a stale hardcoded catalogue.
 	if len(d.config.FallbackModels) > 0 {
-		d.cacheModels(d.config.FallbackModels, 3)
 		d.log.WithFields(logrus.Fields{
 			"provider": d.config.ProviderName,
 			"count":    len(d.config.FallbackModels),
-			"tier":     3,
-			"source":   "fallback",
-		}).Info("Using fallback model list (CONST-036-deprecated path; see ticket #fallback-tier-removed-needs-httptest-fixture)")
+		}).Debug("Live model discovery unavailable; FallbackModels is deprecated and NOT consulted (CONST-036). Returning nil.")
 	}
 
-	return d.config.FallbackModels
+	return nil
 }
 
 // GetCachedModels returns the currently cached models without triggering discovery.
-// Falls back to FallbackModels if cache is empty (CONST-036-deprecated path —
-// see ticket #fallback-tier-removed-needs-httptest-fixture).
+//
+// If the cache is empty it returns nil — NOT the deprecated FallbackModels list.
+// Per CONST-036, LLMsVerifier is the Single Source of Truth; this module never
+// serves a hardcoded catalogue as authoritative. An empty cache means "no models
+// discovered yet"; the caller must trigger discovery (DiscoverModels) or surface
+// the unavailability honestly, never substitute a stale hardcoded list.
 func (d *Discoverer) GetCachedModels() []string {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	if len(d.models) == 0 {
-		return d.config.FallbackModels
+		return nil
 	}
 	result := make([]string, len(d.models))
 	copy(result, d.models)
@@ -304,7 +312,8 @@ func (d *Discoverer) discoverFromProviderAPI(ctx context.Context) []string {
 // Implement ModelsDevDiscoverer interface and set it on the Discoverer if needed.
 func (d *Discoverer) discoverFromModelsDev(_ context.Context) []string {
 	// models.dev Tier 2 discovery is not available in the standalone module.
-	// Use Tier 1 (provider API) or Tier 3 (fallback models) instead.
+	// Tier 1 (provider API) is the live source; there is no hardcoded fallback
+	// (former Tier 3 removed per CONST-036).
 	d.log.WithField("provider", d.config.ProviderName).
 		Debug("models.dev discovery not available in standalone module, skipping Tier 2")
 	return nil

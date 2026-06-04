@@ -112,7 +112,10 @@ func TestDiscoverModels_Tier1_WithCustomFilter(t *testing.T) {
 	assert.NotContains(t, models, "llama-guard-3-8b")
 }
 
-func TestDiscoverModels_Tier1_APIFails_FallsToTier3(t *testing.T) {
+// TestDiscoverModels_Tier1_APIFails_ReturnsNil_NoHardcodedFallback proves the
+// CONST-036 guard: when the live provider API fails, DiscoverModels MUST return
+// nil and MUST NOT surface the deprecated hardcoded FallbackModels list.
+func TestDiscoverModels_Tier1_APIFails_ReturnsNil_NoHardcodedFallback(t *testing.T) {
 	// API returns error
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -124,17 +127,24 @@ func TestDiscoverModels_Tier1_APIFails_FallsToTier3(t *testing.T) {
 		ModelsEndpoint: server.URL,
 		APIKey:         "test-key",
 		ModelsDevID:    "", // Skip tier 2
+		// FallbackModels is deprecated and MUST NOT be consulted (CONST-036).
 		FallbackModels: []string{"fallback-model-1", "fallback-model-2"},
 	}
 
 	d := NewDiscoverer(config)
 	models := d.DiscoverModels()
 
-	assert.Equal(t, config.FallbackModels, models)
-	assert.Equal(t, 3, d.GetDiscoveryTier())
+	// CONST-036: live discovery failed → return nil, NEVER the hardcoded list.
+	assert.Nil(t, models, "hardcoded FallbackModels must NOT be returned (CONST-036)")
+	assert.NotContains(t, models, "fallback-model-1")
+	assert.NotContains(t, models, "fallback-model-2")
+	// Tier never reaches 3 — the hardcoded tier is removed.
+	assert.NotEqual(t, 3, d.GetDiscoveryTier())
 }
 
-func TestDiscoverModels_Tier1_EmptyResponse_FallsToTier3(t *testing.T) {
+// TestDiscoverModels_Tier1_EmptyResponse_ReturnsNil_NoHardcodedFallback proves
+// that an empty live response also yields nil, never the hardcoded list.
+func TestDiscoverModels_Tier1_EmptyResponse_ReturnsNil_NoHardcodedFallback(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		resp := openAIModelsResponse{Data: []openAIModel{}}
 		w.Header().Set("Content-Type", "application/json")
@@ -152,11 +162,14 @@ func TestDiscoverModels_Tier1_EmptyResponse_FallsToTier3(t *testing.T) {
 	d := NewDiscoverer(config)
 	models := d.DiscoverModels()
 
-	assert.Equal(t, []string{"fallback-model"}, models)
-	assert.Equal(t, 3, d.GetDiscoveryTier())
+	assert.Nil(t, models, "hardcoded FallbackModels must NOT be returned (CONST-036)")
+	assert.NotContains(t, models, "fallback-model")
+	assert.NotEqual(t, 3, d.GetDiscoveryTier())
 }
 
-func TestDiscoverModels_NoAPIKey_SkipsTier1(t *testing.T) {
+// TestDiscoverModels_NoAPIKey_ReturnsNil_NoHardcodedFallback proves that when
+// Tier 1 is skipped (no API key) the hardcoded list is still NOT surfaced.
+func TestDiscoverModels_NoAPIKey_ReturnsNil_NoHardcodedFallback(t *testing.T) {
 	config := ProviderConfig{
 		ProviderName:   "test",
 		ModelsEndpoint: "https://api.test.com/v1/models", // Would fail anyway
@@ -167,8 +180,9 @@ func TestDiscoverModels_NoAPIKey_SkipsTier1(t *testing.T) {
 	d := NewDiscoverer(config)
 	models := d.DiscoverModels()
 
-	assert.Equal(t, []string{"fallback-model"}, models)
-	assert.Equal(t, 3, d.GetDiscoveryTier())
+	assert.Nil(t, models, "hardcoded FallbackModels must NOT be returned (CONST-036)")
+	assert.NotContains(t, models, "fallback-model")
+	assert.NotEqual(t, 3, d.GetDiscoveryTier())
 }
 
 func TestDiscoverModels_Caching(t *testing.T) {
@@ -267,7 +281,10 @@ func TestInvalidateCache(t *testing.T) {
 	assert.Equal(t, 2, callCount) // Cache invalidated, hit API again
 }
 
-func TestGetCachedModels_Empty(t *testing.T) {
+// TestGetCachedModels_Empty_ReturnsNil_NoHardcodedFallback proves the cache-miss
+// path of GetCachedModels also obeys CONST-036: an empty cache returns nil, never
+// the deprecated hardcoded FallbackModels list.
+func TestGetCachedModels_Empty_ReturnsNil_NoHardcodedFallback(t *testing.T) {
 	config := ProviderConfig{
 		ProviderName:   "test",
 		FallbackModels: []string{"fallback-1", "fallback-2"},
@@ -276,7 +293,9 @@ func TestGetCachedModels_Empty(t *testing.T) {
 	d := NewDiscoverer(config)
 	models := d.GetCachedModels()
 
-	assert.Equal(t, config.FallbackModels, models)
+	assert.Nil(t, models, "empty cache must return nil, not hardcoded FallbackModels (CONST-036)")
+	assert.NotContains(t, models, "fallback-1")
+	assert.NotContains(t, models, "fallback-2")
 }
 
 func TestGetCachedModels_AfterDiscovery(t *testing.T) {
