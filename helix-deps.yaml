@@ -1,0 +1,23 @@
+# helix-deps.yaml — LLMProvider submodule Submodule-Dependency Manifest
+# Per HelixConstitution §11.4.31 (Submodule-Dependency-Manifest Mandate).
+#
+# LLMProvider (module digital.vasic.llmprovider) is a leaf Go submodule
+# with ZERO own-org submodule dependencies — its go.mod require block holds
+# only third-party modules (sirupsen/logrus, stretchr/testify,
+# gopkg.in/yaml.v3) and there are no `replace` directives pointing at
+# vasic-digital / HelixDevelopment modules.
+#
+# Schema reference: <constitution-submodule>/Constitution.md §11.4.31.
+# ssh_url + org derived from this submodule's authoritative git remote
+# (vasic-digital/LLMProvider).
+# Last updated: 2026-06-08 (§11.4.31 manifest backfill for the 5 own-org
+# submodules added 2026-06-08).
+
+schema_version: 1
+deps: []
+
+transitive_handling:
+  recursive: true
+  conflict_resolution: operator-required
+
+language_specific_subtree: false
