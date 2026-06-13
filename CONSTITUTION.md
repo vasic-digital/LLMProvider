@@ -128,6 +128,12 @@ protocol layer are mandatory:
   (e.g. `kill <service>`, swap a password). The test MUST fail. If
   it still passes, the test is non-conformant and MUST be tightened.
 
+## CONST-036: Propagation to Submodules
+
+This Constitution, along with CLAUDE.md and AGENTS.md, MUST be propagated to ALL submodules. Each submodule's governance MUST reference this parent Constitution. Changes to this Constitution MUST trigger review of all submodule governance files.
+
+---
+
 ## CONST-033 clarification — distinguishing host events from sluggishness
 
 Heavy container builds (BuildKit pulling many GB of layers, parallel
