@@ -39,6 +39,7 @@ type ZenHTTPProvider struct {
 	serverCmd     *exec.Cmd
 	serverStarted bool
 	serverMu      sync.Mutex
+	sessionMu     sync.Mutex
 	autoStart     bool
 }
 
@@ -315,17 +316,29 @@ func (p *ZenHTTPProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 		}
 	}
 
-	// Create session if needed
+	// Create session if needed. Guard p.sessionID against concurrent Complete
+	// calls (the provider advertises MaxConcurrentRequests > 1).
+	p.sessionMu.Lock()
 	if p.sessionID == "" {
 		sessionID, err := p.createSession(ctx)
 		if err != nil {
+			p.sessionMu.Unlock()
 			return nil, fmt.Errorf("failed to create session: %w", err)
 		}
 		p.sessionID = sessionID
 	}
+	sessionID := p.sessionID
+	p.sessionMu.Unlock()
 
 	// Build prompt from messages
 	var promptBuilder strings.Builder
+	// Forward the system instruction (req.Prompt) ahead of the conversation so
+	// it is never silently dropped when req.Messages is also populated.
+	if req.Prompt != "" {
+		promptBuilder.WriteString("System: ")
+		promptBuilder.WriteString(req.Prompt)
+		promptBuilder.WriteString("\n\n")
+	}
 	for _, msg := range req.Messages {
 		switch msg.Role {
 		case "system":
@@ -353,7 +366,7 @@ func (p *ZenHTTPProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 
 	// Send message
 	startTime := time.Now()
-	msgResp, err := p.sendMessage(ctx, p.sessionID, prompt)
+	msgResp, err := p.sendMessage(ctx, sessionID, prompt)
 	duration := time.Since(startTime)
 
 	if err != nil {
@@ -375,7 +388,7 @@ func (p *ZenHTTPProvider) Complete(ctx context.Context, req *models.LLMRequest) 
 		CreatedAt:    time.Now(),
 		Metadata: map[string]interface{}{
 			"source":            "opencode-http",
-			"session_id":        p.sessionID,
+			"session_id":        sessionID,
 			"message_id":        msgResp.ID,
 			"model":             msgResp.Model,
 			"base_url":          p.baseURL,

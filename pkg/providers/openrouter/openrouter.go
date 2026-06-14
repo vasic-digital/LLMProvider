@@ -1,6 +1,7 @@
 package openrouter
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -8,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"strings"
 	"time"
 
 	"digital.vasic.llmprovider/pkg/discovery"
@@ -466,9 +468,12 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 		defer close(ch)
 		defer func() { _ = resp.Body.Close() }()
 
-		// Read SSE stream
-		reader := resp.Body
-		buf := make([]byte, 4096)
+		// Read SSE stream line-by-line. Using a fixed-size Read() buffer would
+		// split SSE "data: {...}" lines larger than the buffer across reads,
+		// corrupting the JSON and silently dropping that chunk's content;
+		// bufio.Reader.ReadBytes('\n') respects line boundaries regardless of
+		// line size.
+		reader := bufio.NewReader(resp.Body)
 		var contentBuilder bytes.Buffer
 		chunkIndex := 0
 
@@ -479,10 +484,112 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 			default:
 			}
 
-			n, err := reader.Read(buf)
-			if err != nil {
-				if err.Error() != "EOF" {
-					// Send final chunk with accumulated content
+			lineBytes, readErr := reader.ReadBytes('\n')
+
+			// Process any complete line content returned alongside the error
+			// (ReadBytes returns the data read so far on EOF without a newline).
+			lineStr := strings.TrimRight(string(lineBytes), "\r\n")
+
+			processLine := func(lineStr string) (stop bool) {
+				// Skip SSE comments (OpenRouter sends
+				// ": OPENROUTER PROCESSING" keep-alive)
+				if len(lineStr) > 0 && lineStr[0] == ':' {
+					return false
+				}
+
+				if len(lineStr) > 6 && lineStr[:6] == "data: " {
+					jsonData := lineStr[6:]
+					if jsonData == "[DONE]" {
+						// Stream complete
+						ch <- &models.LLMResponse{
+							ID:           fmt.Sprintf("stream-%d", chunkIndex),
+							RequestID:    req.ID,
+							ProviderID:   "openrouter",
+							ProviderName: "OpenRouter",
+							Content:      contentBuilder.String(),
+							FinishReason: "stop",
+							CreatedAt:    time.Now(),
+						}
+						return true
+					}
+
+					// Check for mid-stream errors
+					if bytes.Contains(
+						[]byte(jsonData), []byte(`"error"`),
+					) {
+						var errResp struct {
+							Error struct {
+								Message string `json:"message"`
+								Code    int    `json:"code"`
+							} `json:"error"`
+						}
+						if json.Unmarshal(
+							[]byte(jsonData), &errResp,
+						) == nil && errResp.Error.Message != "" {
+							ch <- &models.LLMResponse{
+								ID: fmt.Sprintf(
+									"stream-error-%d", chunkIndex,
+								),
+								RequestID:    req.ID,
+								ProviderID:   "openrouter",
+								ProviderName: "OpenRouter",
+								Content:      contentBuilder.String(),
+								FinishReason: "error",
+								CreatedAt:    time.Now(),
+								Metadata: map[string]any{
+									"error":      errResp.Error.Message,
+									"error_code": errResp.Error.Code,
+								},
+							}
+							return true
+						}
+					}
+
+					var chunk struct {
+						Choices []struct {
+							Delta struct {
+								Content string `json:"content"`
+							} `json:"delta"`
+							FinishReason string `json:"finish_reason"`
+						} `json:"choices"`
+					}
+
+					if err := json.Unmarshal([]byte(jsonData), &chunk); err == nil {
+						if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
+							content := chunk.Choices[0].Delta.Content
+							contentBuilder.WriteString(content)
+							chunkIndex++
+
+							// Send chunk
+							ch <- &models.LLMResponse{
+								ID:           fmt.Sprintf("stream-%d", chunkIndex),
+								RequestID:    req.ID,
+								ProviderID:   "openrouter",
+								ProviderName: "OpenRouter",
+								Content:      content,
+								FinishReason: "",
+								CreatedAt:    time.Now(),
+								Metadata: map[string]any{
+									"is_chunk": true,
+									"index":    chunkIndex,
+								},
+							}
+						}
+					}
+				}
+				return false
+			}
+
+			if lineStr != "" {
+				if processLine(lineStr) {
+					return
+				}
+			}
+
+			if readErr != nil {
+				if readErr == io.EOF {
+					// Stream ended without an explicit [DONE]; emit the
+					// accumulated content as the final frame.
 					if contentBuilder.Len() > 0 {
 						ch <- &models.LLMResponse{
 							ID:           fmt.Sprintf("stream-%d", chunkIndex),
@@ -496,102 +603,6 @@ func (p *SimpleOpenRouterProvider) CompleteStream(ctx context.Context, req *mode
 					}
 				}
 				return
-			}
-
-			if n > 0 {
-				data := string(buf[:n])
-				// Parse SSE data lines
-				lines := bytes.Split([]byte(data), []byte("\n"))
-				for _, line := range lines {
-					lineStr := string(line)
-
-					// Skip SSE comments (OpenRouter sends
-					// ": OPENROUTER PROCESSING" keep-alive)
-					if len(lineStr) > 0 && lineStr[0] == ':' {
-						continue
-					}
-
-					if len(lineStr) > 6 && lineStr[:6] == "data: " {
-						jsonData := lineStr[6:]
-						if jsonData == "[DONE]" {
-							// Stream complete
-							ch <- &models.LLMResponse{
-								ID:           fmt.Sprintf("stream-%d", chunkIndex),
-								RequestID:    req.ID,
-								ProviderID:   "openrouter",
-								ProviderName: "OpenRouter",
-								Content:      contentBuilder.String(),
-								FinishReason: "stop",
-								CreatedAt:    time.Now(),
-							}
-							return
-						}
-
-						// Check for mid-stream errors
-						if bytes.Contains(
-							[]byte(jsonData), []byte(`"error"`),
-						) {
-							var errResp struct {
-								Error struct {
-									Message string `json:"message"`
-									Code    int    `json:"code"`
-								} `json:"error"`
-							}
-							if json.Unmarshal(
-								[]byte(jsonData), &errResp,
-							) == nil && errResp.Error.Message != "" {
-								ch <- &models.LLMResponse{
-									ID: fmt.Sprintf(
-										"stream-error-%d", chunkIndex,
-									),
-									RequestID:    req.ID,
-									ProviderID:   "openrouter",
-									ProviderName: "OpenRouter",
-									Content:      contentBuilder.String(),
-									FinishReason: "error",
-									CreatedAt:    time.Now(),
-									Metadata: map[string]any{
-										"error":      errResp.Error.Message,
-										"error_code": errResp.Error.Code,
-									},
-								}
-								return
-							}
-						}
-
-						var chunk struct {
-							Choices []struct {
-								Delta struct {
-									Content string `json:"content"`
-								} `json:"delta"`
-								FinishReason string `json:"finish_reason"`
-							} `json:"choices"`
-						}
-
-						if err := json.Unmarshal([]byte(jsonData), &chunk); err == nil {
-							if len(chunk.Choices) > 0 && chunk.Choices[0].Delta.Content != "" {
-								content := chunk.Choices[0].Delta.Content
-								contentBuilder.WriteString(content)
-								chunkIndex++
-
-								// Send chunk
-								ch <- &models.LLMResponse{
-									ID:           fmt.Sprintf("stream-%d", chunkIndex),
-									RequestID:    req.ID,
-									ProviderID:   "openrouter",
-									ProviderName: "OpenRouter",
-									Content:      content,
-									FinishReason: "",
-									CreatedAt:    time.Now(),
-									Metadata: map[string]any{
-										"is_chunk": true,
-										"index":    chunkIndex,
-									},
-								}
-							}
-						}
-					}
-				}
 			}
 		}
 	}()

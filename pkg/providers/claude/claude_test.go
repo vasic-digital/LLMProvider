@@ -688,7 +688,13 @@ func TestClaudeProvider_CompleteStream_Error(t *testing.T) {
 	}))
 	defer server.Close()
 
-	provider := NewClaudeProvider("test-key", server.URL, "claude-3-sonnet")
+	// Fast retry config so the 3 retries on a 500 don't dominate test time.
+	provider := NewClaudeProviderWithRetry("test-key", server.URL, "claude-3-sonnet", RetryConfig{
+		MaxRetries:   1,
+		InitialDelay: 1 * time.Millisecond,
+		MaxDelay:     2 * time.Millisecond,
+		Multiplier:   2.0,
+	})
 	req := &models.LLMRequest{
 		ID: "test-stream-request",
 		Messages: []models.Message{
@@ -696,18 +702,14 @@ func TestClaudeProvider_CompleteStream_Error(t *testing.T) {
 		},
 	}
 
+	// Reconciled per §11.4.120: CompleteStream now guards on StatusCode before
+	// consuming the body (matching every sibling provider), so a non-2xx
+	// response is surfaced as a returned error rather than swallowed by the
+	// SSE loop into a fake-success final response.
 	ch, err := provider.CompleteStream(context.Background(), req)
-	require.NoError(t, err) // Error comes through channel, not return
-	require.NotNil(t, ch)
-
-	// Collect responses - should get error response
-	var responses []*models.LLMResponse
-	for resp := range ch {
-		responses = append(responses, resp)
-	}
-
-	// Should have at least one response (error)
-	assert.GreaterOrEqual(t, len(responses), 0)
+	require.Error(t, err)
+	assert.Nil(t, ch)
+	assert.Contains(t, err.Error(), "500")
 }
 
 func TestClaudeProvider_CompleteStream_ContextCancellation(t *testing.T) {

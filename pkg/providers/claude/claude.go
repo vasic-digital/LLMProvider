@@ -344,6 +344,24 @@ func (p *ClaudeProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 		return nil, fmt.Errorf("Claude streaming API call failed: %w", err)
 	}
 
+	// Guard on status BEFORE consuming the body as SSE. makeAPICall returns
+	// (resp, nil) for non-retryable errors (e.g. HTTP 400), and a JSON error
+	// body has no "data: " lines, so the stream loop would otherwise hit EOF
+	// and emit a FinishReason="stop" final response — a success-on-error
+	// bluff. Surface the error instead.
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body) //nolint:errcheck
+		_ = resp.Body.Close()
+		bodyStr := string(body)
+		if strings.Contains(bodyStr, OAuthRestrictionError) {
+			return nil, &OAuthRestrictionErr{
+				Message: i18n.Tr(context.Background(),
+					"llmprovider_claude_oauth_product_restricted", nil),
+			}
+		}
+		return nil, fmt.Errorf("Claude API error: %d - %s", resp.StatusCode, bodyStr)
+	}
+
 	// Create response channel
 	ch := make(chan *models.LLMResponse)
 
