@@ -210,36 +210,25 @@ func (p *NvidiaProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 		reader := bufio.NewReader(resp.Body)
 		var fullContent string
 
-		for {
-			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
-				ch <- &models.LLMResponse{
-					ID:           "stream-error-" + req.ID,
-					RequestID:    req.ID,
-					ProviderID:   "nvidia",
-					ProviderName: "NVIDIA NIM",
-					FinishReason: "error",
-					CreatedAt:    time.Now(),
-				}
-				return
-			}
-
-			line = bytes.TrimSpace(line)
+		// processLine handles one SSE line; returns stop=true when the stream
+		// is complete (DONE marker or finish_reason set). It is invoked even
+		// for the final partial line ReadBytes returns alongside io.EOF, so a
+		// last "data: {...}" / "data: [DONE]" chunk written without a trailing
+		// newline is never dropped (mirrors the openrouter reference loop).
+		processLine := func(raw []byte) (stop bool) {
+			line := bytes.TrimSpace(raw)
 			if !bytes.HasPrefix(line, []byte("data: ")) {
-				continue
+				return false
 			}
 			line = bytes.TrimPrefix(line, []byte("data: "))
 
 			if bytes.Equal(line, []byte("[DONE]")) {
-				break
+				return true
 			}
 
 			var streamResp NvidiaStreamResponse
 			if err := json.Unmarshal(line, &streamResp); err != nil {
-				continue
+				return false
 			}
 
 			if len(streamResp.Choices) > 0 {
@@ -260,8 +249,37 @@ func (p *NvidiaProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 				}
 
 				if streamResp.Choices[0].FinishReason != nil {
+					return true
+				}
+			}
+			return false
+		}
+
+		for {
+			line, err := reader.ReadBytes('\n')
+
+			// Process any complete line content returned alongside the error
+			// (ReadBytes returns the data read so far on EOF without a newline).
+			// break (not return) so the post-loop final frame is still emitted.
+			if len(line) > 0 {
+				if processLine(line) {
 					break
 				}
+			}
+
+			if err != nil {
+				if err == io.EOF {
+					break
+				}
+				ch <- &models.LLMResponse{
+					ID:           "stream-error-" + req.ID,
+					RequestID:    req.ID,
+					ProviderID:   "nvidia",
+					ProviderName: "NVIDIA NIM",
+					FinishReason: "error",
+					CreatedAt:    time.Now(),
+				}
+				return
 			}
 		}
 

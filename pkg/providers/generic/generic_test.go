@@ -974,3 +974,40 @@ func BenchmarkComplete(b *testing.B) {
 		_, _ = provider.Complete(context.Background(), req)
 	}
 }
+
+// TestStreamLastChunkNoTrailingNewline_EOF is a reproduce-first RED test for the
+// ReadBytes('\n') EOF data-loss bug: when the final SSE "data:{...}" content
+// chunk arrives WITHOUT a trailing newline and the server then closes, ReadBytes
+// returns the partial line ALONGSIDE io.EOF. The loop must process that returned
+// line before breaking. The reference openrouter adapter processes accumulated
+// content on EOF; this asserts the last chunk's content is not dropped.
+func TestStreamLastChunkNoTrailingNewline_EOF(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		// First chunk WITH trailing newline, then a final chunk WITHOUT one,
+		// then the handler returns -> connection closes -> EOF with the last
+		// line still buffered in ReadBytes.
+		_, _ = fmt.Fprint(w, "data: {\"id\":\"s1\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello \"},\"finish_reason\":\"\"}]}\n")
+		_, _ = fmt.Fprint(w, "data: {\"id\":\"s2\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"LAST\"},\"finish_reason\":\"\"}]}")
+	}))
+	defer server.Close()
+
+	provider := NewGenericProvider("test-provider", "test-key", server.URL, "test-model")
+	req := &models.LLMRequest{
+		ID:       "req-eof-001",
+		Messages: []models.Message{{Role: "user", Content: "Say hello"}},
+	}
+
+	ch, err := provider.CompleteStream(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, ch)
+
+	var streamed string
+	for resp := range ch {
+		streamed += resp.Content
+	}
+
+	assert.Contains(t, streamed, "LAST",
+		"final content chunk arriving without a trailing newline before EOF must not be dropped")
+}

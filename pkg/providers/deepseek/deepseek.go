@@ -230,10 +230,10 @@ func (p *DeepSeekProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 
 		for {
 			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
+			// On io.EOF, ReadBytes may return a final partial line (no trailing
+			// newline) that MUST still be processed before exiting; only a
+			// non-EOF error is a true stream failure.
+			if err != nil && err != io.EOF {
 				// Send error response and exit
 				errorResp := &models.LLMResponse{
 					ID:             "stream-error-" + req.ID,
@@ -252,10 +252,14 @@ func (p *DeepSeekProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 				ch <- errorResp
 				return
 			}
+			eof := err == io.EOF
 
 			// Skip empty lines and "data: " prefix
 			line = bytes.TrimSpace(line)
 			if !bytes.HasPrefix(line, []byte("data: ")) {
+				if eof {
+					break
+				}
 				continue
 			}
 			line = bytes.TrimPrefix(line, []byte("data: "))
@@ -268,6 +272,9 @@ func (p *DeepSeekProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 			// Parse JSON
 			var streamResp DeepSeekStreamResponse
 			if err := json.Unmarshal(line, &streamResp); err != nil {
+				if eof {
+					break
+				}
 				continue // Skip malformed JSON
 			}
 
@@ -299,6 +306,10 @@ func (p *DeepSeekProvider) CompleteStream(ctx context.Context, req *models.LLMRe
 				if streamResp.Choices[0].FinishReason != nil {
 					break
 				}
+			}
+
+			if eof {
+				break
 			}
 		}
 

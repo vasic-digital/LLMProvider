@@ -233,8 +233,8 @@ func NewQwenProviderWithOAuthAndRetry(baseURL, model string, retryConfig RetryCo
 		httpClient: &http.Client{
 			Timeout: 60 * time.Second,
 		},
-		retryConfig:     retryConfig,
-		authType:        AuthTypeOAuth,
+		retryConfig: retryConfig,
+		authType:    AuthTypeOAuth,
 		// oauthCredReader: set via constructor
 	}
 
@@ -346,10 +346,10 @@ func (q *QwenProvider) CompleteStream(ctx context.Context, req *models.LLMReques
 
 			// Read a line from the SSE stream
 			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
+			// On io.EOF, ReadBytes may still return a final partial line (the last
+			// data chunk without a trailing newline). Process it before breaking.
+			eof := err == io.EOF
+			if err != nil && !eof {
 				// Send error response for read errors
 				errorResp := &models.LLMResponse{
 					ID:           fmt.Sprintf("%s-error-%d", req.ID, chunkIndex),
@@ -403,7 +403,13 @@ func (q *QwenProvider) CompleteStream(ctx context.Context, req *models.LLMReques
 				// If there was a parse error, log it but continue
 				if parseErr != nil {
 					// Skip malformed JSON lines silently
+					if eof {
+						break
+					}
 					continue
+				}
+				if eof {
+					break
 				}
 				continue
 			}
@@ -469,6 +475,10 @@ func (q *QwenProvider) CompleteStream(ctx context.Context, req *models.LLMReques
 						return
 					}
 				}
+			}
+
+			if eof {
+				break
 			}
 		}
 

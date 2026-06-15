@@ -254,3 +254,33 @@ func BenchmarkSambaNovaProvider_ConvertResponse(b *testing.B) {
 		provider.convertResponse(req, sResp, startTime)
 	}
 }
+
+// TestCompleteStream_EOFLastChunkNoNewline reproduces the EOF-last-chunk
+// data-loss bug: when the final SSE data chunk arrives WITHOUT a trailing
+// newline (server closes the connection right after writing it),
+// bufio.Reader.ReadBytes('\\n') returns the partial line ALONGSIDE
+// io.EOF. The buggy loop breaks on io.EOF before processing that line,
+// silently dropping the last chunk content. RED: aggregated content lacks "LAST".
+func TestCompleteStream_EOFLastChunkNoNewline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("data: {\"id\":\"s1\",\"choices\":[{\"delta\":{\"content\":\"Hello \"}}]}\n"))
+		_, _ = w.Write([]byte("data: {\"id\":\"s2\",\"choices\":[{\"delta\":{\"content\":\"LAST\"}}]}"))
+	}))
+	defer server.Close()
+
+	provider := NewSambaNovaProvider("test-key", server.URL, "")
+	req := &models.LLMRequest{ID: "stream-eof", Messages: []models.Message{{Role: "user", Content: "Hi"}}}
+
+	ch, err := provider.CompleteStream(context.Background(), req)
+	require.NoError(t, err)
+
+	var agg string
+	for resp := range ch {
+		agg += resp.Content
+	}
+	assert.Contains(t, agg, "LAST",
+		"final SSE chunk lacking a trailing newline must not be dropped on EOF")
+	assert.Contains(t, agg, "Hello ")
+}

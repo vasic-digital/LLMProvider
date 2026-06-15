@@ -737,3 +737,38 @@ func BenchmarkDeepSeekProvider_CalculateConfidence(b *testing.B) {
 		provider.calculateConfidence(content, "stop")
 	}
 }
+
+// TestDeepSeekStreamLastChunkNoTrailingNewline_EOF is a reproduce-first RED test
+// for the ReadBytes('\n') EOF data-loss bug: when the final SSE "data:{...}"
+// content chunk arrives WITHOUT a trailing newline and the server then closes,
+// ReadBytes returns the partial line ALONGSIDE io.EOF. The loop breaks on EOF
+// before processing it, dropping the last delta. Consumers accumulate per-chunk
+// Content, so the dropped delta is lost user-visible content.
+func TestDeepSeekStreamLastChunkNoTrailingNewline_EOF(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("data: {\"id\":\"s1\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"Hello \"},\"finish_reason\":null}]}\n"))
+		// Final chunk WITHOUT trailing newline; handler returns -> EOF with line buffered.
+		_, _ = w.Write([]byte("data: {\"id\":\"s2\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"LAST\"},\"finish_reason\":null}]}"))
+	}))
+	defer server.Close()
+
+	provider := NewDeepSeekProvider("test-key", server.URL, "deepseek-coder")
+	req := &models.LLMRequest{
+		ID:       "req-eof-ds-001",
+		Messages: []models.Message{{Role: "user", Content: "Say hello"}},
+	}
+
+	ch, err := provider.CompleteStream(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, ch)
+
+	var streamed string
+	for resp := range ch {
+		streamed += resp.Content
+	}
+
+	assert.Contains(t, streamed, "LAST",
+		"final content chunk arriving without a trailing newline before EOF must not be dropped")
+}

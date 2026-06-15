@@ -205,6 +205,31 @@ func (o *OllamaProvider) CompleteStream(ctx context.Context, req *models.LLMRequ
 		}
 		defer func() { _ = response.Body.Close() }()
 
+		// Guard on status BEFORE decoding the body as a stream. The Ollama
+		// stream endpoint returns a non-2xx status with a JSON error body
+		// (e.g. 404 "model not found"). That JSON decodes cleanly into an
+		// empty OllamaResponse, so without this guard the loop would emit a
+		// silent empty chunk and close without ever signalling an error — a
+		// success-on-HTTP-error bluff. The non-streaming Complete path already
+		// returns an error for the same status; mirror that contract here.
+		if response.StatusCode != http.StatusOK {
+			body, _ := io.ReadAll(response.Body) //nolint:errcheck
+			ch <- &models.LLMResponse{
+				RequestID:    req.ID,
+				ProviderID:   "ollama",
+				ProviderName: "Ollama",
+				Content: i18n.Tr(context.Background(),
+					"llmprovider_ollama_response_error",
+					map[string]any{"error": fmt.Sprintf(
+						"Ollama API returned status %d: %s",
+						response.StatusCode, string(body))}),
+				Confidence:   0.0,
+				FinishReason: "error",
+				CreatedAt:    time.Now(),
+			}
+			return
+		}
+
 		decoder := json.NewDecoder(response.Body)
 		fullContent := ""
 

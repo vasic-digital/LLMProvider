@@ -276,10 +276,10 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 
 		for {
 			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
+			// On io.EOF, ReadBytes may return a final partial line (no trailing
+			// newline) that MUST still be processed before exiting; only a
+			// non-EOF error is a true stream failure.
+			if err != nil && err != io.EOF {
 				ch <- &models.LLMResponse{
 					ID:           "stream-error-" + req.ID,
 					RequestID:    req.ID,
@@ -290,9 +290,13 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 				}
 				return
 			}
+			eof := err == io.EOF
 
 			line = bytes.TrimSpace(line)
 			if !bytes.HasPrefix(line, []byte("data: ")) {
+				if eof {
+					break
+				}
 				continue
 			}
 			line = bytes.TrimPrefix(line, []byte("data: "))
@@ -314,6 +318,9 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 
 			var streamResp StreamResponse
 			if err := json.Unmarshal(line, &streamResp); err != nil {
+				if eof {
+					break
+				}
 				continue
 			}
 
@@ -331,6 +338,10 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 						CreatedAt:    time.Now(),
 					}
 				}
+			}
+
+			if eof {
+				break
 			}
 		}
 	}()

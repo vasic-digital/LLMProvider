@@ -539,3 +539,36 @@ func BenchmarkPerplexityProvider_ConvertResponse(b *testing.B) {
 		provider.convertResponse(req, resp, startTime)
 	}
 }
+
+// TestProvider_StreamLastChunkNoTrailingNewline_EOF is a reproduce-first RED test
+// for the ReadBytes('\n') EOF data-loss bug: a final SSE "data:{...}" chunk
+// arriving WITHOUT a trailing newline is returned by ReadBytes alongside io.EOF;
+// the loop must process it before breaking, otherwise the last delta is dropped.
+func TestProvider_StreamLastChunkNoTrailingNewline_EOF(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("data: {\"id\":\"s1\",\"choices\":[{\"delta\":{\"content\":\"Hello \"}}]}\n"))
+		// Final chunk WITHOUT a trailing newline; handler returns -> EOF with line buffered.
+		_, _ = w.Write([]byte("data: {\"id\":\"s2\",\"choices\":[{\"delta\":{\"content\":\"LAST\"}}]}"))
+	}))
+	defer server.Close()
+
+	p := NewProvider("ppx-test-key", server.URL, "sonar")
+	req := &models.LLMRequest{
+		ID:       "req-eof-ppx-001",
+		Messages: []models.Message{{Role: "user", Content: "Hello"}},
+	}
+
+	ch, err := p.CompleteStream(context.Background(), req)
+	require.NoError(t, err)
+	require.NotNil(t, ch)
+
+	var streamed string
+	for resp := range ch {
+		streamed += resp.Content
+	}
+
+	assert.Contains(t, streamed, "LAST",
+		"final content chunk arriving without a trailing newline before EOF must not be dropped")
+}

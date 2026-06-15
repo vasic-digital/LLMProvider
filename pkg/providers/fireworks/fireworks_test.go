@@ -640,3 +640,85 @@ func BenchmarkProvider_ConvertResponse(b *testing.B) {
 		provider.convertResponse(req, resp, startTime)
 	}
 }
+
+// TestProvider_CompleteStream_FinalChunkNoTrailingNewline reproduces the
+// EOF-last-chunk data-loss defect (final content chunk arrives without a
+// trailing newline, then EOF). ReadBytes returns the line bytes alongside
+// io.EOF; the loop MUST process them before breaking.
+func TestProvider_CompleteStream_FinalChunkNoTrailingNewline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		flusher, _ := w.(http.Flusher)
+		_, _ = w.Write([]byte("data: {\"id\":\"c\",\"choices\":[{\"delta\":{\"content\":\"Hello \"}}]}\n"))
+		flusher.Flush()
+		_, _ = w.Write([]byte("data: {\"id\":\"c\",\"choices\":[{\"delta\":{\"content\":\"LAST\"}}]}"))
+		flusher.Flush()
+	}))
+	defer server.Close()
+
+	provider := NewProvider("test-api-key", server.URL, "")
+	respChan, err := provider.CompleteStream(context.Background(), &models.LLMRequest{
+		ID:       "req-eof",
+		Messages: []models.Message{{Role: "user", Content: "Hi"}},
+	})
+	require.NoError(t, err)
+
+	var combined string
+	for resp := range respChan {
+		combined += resp.Content
+	}
+	assert.Contains(t, combined, "LAST",
+		"final chunk delivered without a trailing newline (EOF) MUST still be processed")
+}
+
+// TestProvider_CompleteStream_DoneNoTrailingNewline reproduces the same defect
+// when terminal `data: [DONE]` arrives without a trailing newline.
+func TestProvider_CompleteStream_DoneNoTrailingNewline(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		flusher, _ := w.(http.Flusher)
+		_, _ = w.Write([]byte("data: {\"id\":\"c\",\"choices\":[{\"delta\":{\"content\":\"Hello World\"}}]}\n"))
+		flusher.Flush()
+		_, _ = w.Write([]byte("data: [DONE]"))
+		flusher.Flush()
+	}))
+	defer server.Close()
+
+	provider := NewProvider("test-api-key", server.URL, "")
+	respChan, err := provider.CompleteStream(context.Background(), &models.LLMRequest{
+		ID:       "req-done-eof",
+		Messages: []models.Message{{Role: "user", Content: "Hi"}},
+	})
+	require.NoError(t, err)
+
+	var responses []*models.LLMResponse
+	for resp := range respChan {
+		responses = append(responses, resp)
+	}
+	require.GreaterOrEqual(t, len(responses), 1)
+	lastResp := responses[len(responses)-1]
+	assert.Equal(t, "stop", lastResp.FinishReason,
+		"terminal [DONE] without a trailing newline (EOF) MUST still emit the final stop frame")
+	assert.Equal(t, "Hello World", lastResp.Content,
+		"final aggregated content MUST be emitted even when [DONE] lacks a trailing newline")
+}
+
+// TestProvider_Complete_EmptyChoicesIsError reproduces the empty-choices
+// PASS-bluff: a HTTP 200 response with an empty "choices" array MUST be an
+// error (matching the reference openrouter adapter), not a silent empty success.
+func TestProvider_Complete_EmptyChoicesIsError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"id":"chatcmpl-1","choices":[]}`))
+	}))
+	defer server.Close()
+
+	provider := NewProvider("test-api-key", server.URL, "")
+	resp, err := provider.Complete(context.Background(), &models.LLMRequest{
+		ID:       "req-empty",
+		Messages: []models.Message{{Role: "user", Content: "Hi"}},
+	})
+	require.Error(t, err,
+		"HTTP 200 with empty choices MUST return an error, not a silent empty-content success")
+	assert.Nil(t, resp)
+}

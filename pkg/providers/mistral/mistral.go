@@ -329,10 +329,10 @@ func (p *MistralProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 
 		for {
 			line, err := reader.ReadBytes('\n')
-			if err != nil {
-				if err == io.EOF {
-					break
-				}
+			// On io.EOF, ReadBytes may still return a final partial line (the last
+			// data chunk without a trailing newline). Process it before breaking.
+			eof := err == io.EOF
+			if err != nil && !eof {
 				// Send error response and exit
 				errorResp := &models.LLMResponse{
 					ID:             "stream-error-" + req.ID,
@@ -355,6 +355,9 @@ func (p *MistralProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 			// Skip empty lines and "data: " prefix
 			line = bytes.TrimSpace(line)
 			if !bytes.HasPrefix(line, []byte("data: ")) {
+				if eof {
+					break
+				}
 				continue
 			}
 			line = bytes.TrimPrefix(line, []byte("data: "))
@@ -367,6 +370,9 @@ func (p *MistralProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 			// Parse JSON
 			var streamResp MistralStreamResponse
 			if err := json.Unmarshal(line, &streamResp); err != nil {
+				if eof {
+					break
+				}
 				continue // Skip malformed JSON
 			}
 
@@ -398,6 +404,10 @@ func (p *MistralProvider) CompleteStream(ctx context.Context, req *models.LLMReq
 				if streamResp.Choices[0].FinishReason != nil {
 					break
 				}
+			}
+
+			if eof {
+				break
 			}
 		}
 

@@ -238,6 +238,10 @@ func (p *Provider) Complete(ctx context.Context, req *models.LLMRequest) (*model
 		return nil, fmt.Errorf("failed to parse response: %w", err)
 	}
 
+	if len(apiResp.Choices) == 0 {
+		return nil, fmt.Errorf("no choices in Together AI response")
+	}
+
 	return p.convertResponse(req, &apiResp, startTime), nil
 }
 
@@ -271,23 +275,32 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 
 		for {
 			line, err := reader.ReadBytes('\n')
+			// On EOF, ReadBytes returns any bytes read so far (a final
+			// "data: {...}" or "data: [DONE]" line that arrived without a
+			// trailing newline). Process that line BEFORE breaking, otherwise
+			// the last chunk is silently dropped.
+			eof := false
 			if err != nil {
 				if err == io.EOF {
-					break
+					eof = true
+				} else {
+					ch <- &models.LLMResponse{
+						ID:           "stream-error-" + req.ID,
+						RequestID:    req.ID,
+						ProviderID:   "together",
+						ProviderName: "Together AI",
+						FinishReason: "error",
+						CreatedAt:    time.Now(),
+					}
+					return
 				}
-				ch <- &models.LLMResponse{
-					ID:           "stream-error-" + req.ID,
-					RequestID:    req.ID,
-					ProviderID:   "together",
-					ProviderName: "Together AI",
-					FinishReason: "error",
-					CreatedAt:    time.Now(),
-				}
-				return
 			}
 
 			line = bytes.TrimSpace(line)
 			if !bytes.HasPrefix(line, []byte("data: ")) {
+				if eof {
+					break
+				}
 				continue
 			}
 			line = bytes.TrimPrefix(line, []byte("data: "))
@@ -309,6 +322,9 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 
 			var streamResp StreamResponse
 			if err := json.Unmarshal(line, &streamResp); err != nil {
+				if eof {
+					break
+				}
 				continue
 			}
 
@@ -326,6 +342,10 @@ func (p *Provider) CompleteStream(ctx context.Context, req *models.LLMRequest) (
 						CreatedAt:    time.Now(),
 					}
 				}
+			}
+
+			if eof {
+				break
 			}
 		}
 	}()
