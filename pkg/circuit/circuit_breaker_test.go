@@ -46,7 +46,7 @@ func (p *failingProvider) CompleteStream(_ context.Context, _ *models.LLMRequest
 	return ch, nil
 }
 
-func (p *failingProvider) HealthCheck() error            { return nil }
+func (p *failingProvider) HealthCheck() error { return nil }
 func (p *failingProvider) GetCapabilities() *models.ProviderCapabilities {
 	return &models.ProviderCapabilities{}
 }

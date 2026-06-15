@@ -154,9 +154,9 @@ func max0(i int) int {
 // chaos faults (error responses, slow responses) can be injected mid-test
 // without races. Mode is read atomically.
 type chaosServer struct {
-	srv     *httptest.Server
-	mode    atomic.Int32 // 0=ok, 1=http500, 2=garbage-body, 3=slow-ok
-	okCalls atomic.Int64
+	srv      *httptest.Server
+	mode     atomic.Int32 // 0=ok, 1=http500, 2=garbage-body, 3=slow-ok
+	okCalls  atomic.Int64
 	errCalls atomic.Int64
 }
 
@@ -205,8 +205,8 @@ func writeCanonical(w http.ResponseWriter) {
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
-func (cs *chaosServer) URL() string  { return cs.srv.URL }
-func (cs *chaosServer) Close()        { cs.srv.Close() }
+func (cs *chaosServer) URL() string     { return cs.srv.URL }
+func (cs *chaosServer) Close()          { cs.srv.Close() }
 func (cs *chaosServer) setMode(m int32) { cs.mode.Store(m) }
 
 // ---------------------------------------------------------------------------
@@ -311,12 +311,12 @@ func TestCacheStress_ConcurrentNoCorruption(t *testing.T) {
 	}
 
 	report := struct {
-		Workers          int      `json:"workers"`
-		IterationsEach   int      `json:"iterations_each"`
-		TotalOps         int      `json:"total_ops"`
-		CorruptionsSeen  int64    `json:"corruptions_seen"`
-		PostStormLeaks   int64    `json:"post_storm_caller_mutation_leaks"`
-		FinalCatalogue   []string `json:"final_catalogue"`
+		Workers           int      `json:"workers"`
+		IterationsEach    int      `json:"iterations_each"`
+		TotalOps          int      `json:"total_ops"`
+		CorruptionsSeen   int64    `json:"corruptions_seen"`
+		PostStormLeaks    int64    `json:"post_storm_caller_mutation_leaks"`
+		FinalCatalogue    []string `json:"final_catalogue"`
 		CanonicalExpected []string `json:"canonical_expected"`
 	}{
 		Workers:           workers,
@@ -676,9 +676,9 @@ func TestCacheChaos_CallerMutationDoesNotCorrupt(t *testing.T) {
 
 	finalCached := d.GetCachedModels()
 	scWriteEvidence(t, "chaos_caller_mutation.json", struct {
-		Leaks         int64    `json:"caller_mutation_leaks_into_cache"`
-		FinalCache    []string `json:"final_cache"`
-		Expected      []string `json:"expected"`
+		Leaks      int64    `json:"caller_mutation_leaks_into_cache"`
+		FinalCache []string `json:"final_cache"`
+		Expected   []string `json:"expected"`
 	}{leaks.Load(), finalCached, canonicalModels})
 
 	assert.Zero(t, leaks.Load(),

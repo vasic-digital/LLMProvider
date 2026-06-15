@@ -63,9 +63,9 @@ func TestBundleTranslator_ResolvesShippedBundle(t *testing.T) {
 		"provider.cloudflare.description": "Cloudflare Workers AI",
 		// Round-379 §11.4: validation-error message IDs migrated from
 		// hardcoded ValidateConfig literals across 10 provider files.
-		"llmprovider_validate_api_key_required":   "API key is required",
-		"llmprovider_validate_base_url_required":  "base URL is required",
-		"llmprovider_validate_model_required":     "model is required",
+		"llmprovider_validate_api_key_required":      "API key is required",
+		"llmprovider_validate_base_url_required":     "base URL is required",
+		"llmprovider_validate_model_required":        "model is required",
 		"llmprovider_validate_oauth_reader_required": "OAuth credential reader is required",
 		"llmprovider_validate_oauth_creds_invalid":   "valid OAuth credentials are required",
 	}

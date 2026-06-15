@@ -1028,7 +1028,7 @@ func TestRetry_502_504(t *testing.T) {
 				)
 
 				req := &models.LLMRequest{
-					ID:       "req-retry-status",
+					ID: "req-retry-status",
 					Messages: []models.Message{
 						{Role: "user", Content: "Hello"},
 					},
@@ -1098,7 +1098,7 @@ func BenchmarkConvertResponse(b *testing.B) {
 		Choices: []Choice{{
 			Index: 0,
 			Message: Message{
-				Role:    "assistant",
+				Role: "assistant",
 				Content: "This is a benchmark response " +
 					"with enough content for testing.",
 			},

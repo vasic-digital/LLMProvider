@@ -62,11 +62,11 @@ type GeminiAPIProvider struct {
 // GeminiAPIRequest represents a request to the Gemini API with extended tool
 // support including Google Search grounding.
 type GeminiAPIRequest struct {
-	Contents         []GeminiContent              `json:"contents"`
-	GenerationConfig GeminiAPIGenerationConfig    `json:"generationConfig,omitempty"`
-	SafetySettings   []GeminiSafetySetting        `json:"safetySettings,omitempty"`
-	Tools            []GeminiToolDefExtended      `json:"tools,omitempty"`
-	ToolConfig       *GeminiToolConfig            `json:"toolConfig,omitempty"`
+	Contents         []GeminiContent           `json:"contents"`
+	GenerationConfig GeminiAPIGenerationConfig `json:"generationConfig,omitempty"`
+	SafetySettings   []GeminiSafetySetting     `json:"safetySettings,omitempty"`
+	Tools            []GeminiToolDefExtended   `json:"tools,omitempty"`
+	ToolConfig       *GeminiToolConfig         `json:"toolConfig,omitempty"`
 }
 
 // GeminiToolDefExtended represents a tool definition that supports both
@@ -82,11 +82,11 @@ type GeminiGoogleSearch struct{}
 // GeminiAPIGenerationConfig extends the base generation config with thinking
 // support for extended-thinking models.
 type GeminiAPIGenerationConfig struct {
-	Temperature     float64              `json:"temperature,omitempty"`
-	TopP            float64              `json:"topP,omitempty"`
-	TopK            int                  `json:"topK,omitempty"`
-	MaxOutputTokens int                  `json:"maxOutputTokens,omitempty"`
-	StopSequences   []string             `json:"stopSequences,omitempty"`
+	Temperature     float64               `json:"temperature,omitempty"`
+	TopP            float64               `json:"topP,omitempty"`
+	TopK            int                   `json:"topK,omitempty"`
+	MaxOutputTokens int                   `json:"maxOutputTokens,omitempty"`
+	StopSequences   []string              `json:"stopSequences,omitempty"`
 	ThinkingConfig  *GeminiThinkingConfig `json:"thinkingConfig,omitempty"`
 }
 
