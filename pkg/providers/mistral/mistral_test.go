@@ -835,8 +835,10 @@ func TestMistralProvider_Complete_AuthRetry401(t *testing.T) {
 }
 
 func TestMistralProvider_HealthCheck_Success(t *testing.T) {
+	var hitPath string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/v1/models" {
+			hitPath = r.URL.Path
 			w.WriteHeader(http.StatusOK)
 			_, _ = w.Write([]byte(`{"data": []}`))
 			return
@@ -845,14 +847,20 @@ func TestMistralProvider_HealthCheck_Success(t *testing.T) {
 	}))
 	defer server.Close()
 
-	// Create provider and inject the server URL for models endpoint
-	provider := NewMistralProvider("test-key", server.URL, "")
-	// Override the httpClient to use the test server for health check
+	// HealthCheck derives the models endpoint from the configured baseURL via
+	// modelsURL() = TrimSuffix(baseURL, "/chat/completions") + "/models".
+	// Pointing baseURL at the test server's /v1/chat/completions makes the
+	// health check hit the test server's /v1/models endpoint (CONST-051(B)
+	// config-injection — NOT the hardcoded api.mistral.ai literal).
+	provider := NewMistralProvider("test-key", server.URL+"/v1/chat/completions", "")
 	provider.httpClient = &http.Client{Timeout: 5 * time.Second}
 
-	// Note: HealthCheck uses hardcoded URL "https://api.mistral.ai/v1/models"
-	// so this test would require modifying the HealthCheck method or mocking differently
-	// For now, we test that the method doesn't panic and returns an error for unreachable server
+	err := provider.HealthCheck()
+
+	// Real success path: a real 200 from the real test server.
+	require.NoError(t, err)
+	// Observable: the health check actually reached the models endpoint.
+	assert.Equal(t, "/v1/models", hitPath)
 }
 
 func TestMistralProvider_HealthCheck_Error(t *testing.T) {
