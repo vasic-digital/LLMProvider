@@ -157,16 +157,25 @@ func TestJunieProvider_BYOKProviders(t *testing.T) {
 }
 
 func TestIsJunieInstalled(t *testing.T) {
+	// In this standalone llmprovider module the Junie CLI is not bundled;
+	// junie_cli_stub.go is the sole definition and MUST report "not installed".
+	// Assert the observable contract deterministically rather than logging.
 	installed := junie.IsJunieInstalled()
 	if installed {
-		t.Logf("Junie should be installed: %v", installed)
+		t.Fatalf("IsJunieInstalled() = true, want false: standalone module ships the CLI stub and cannot have a real Junie CLI installed")
 	}
 }
 
 func TestIsJunieAuthenticated(t *testing.T) {
+	// Authentication cannot succeed without an installed CLI; the stub MUST
+	// report "not authenticated". Assert the contract, and assert the
+	// invariant that an un-installed CLI is never reported as authenticated.
 	authenticated := junie.IsJunieAuthenticated()
 	if authenticated {
-		t.Logf("Junie should be authenticated: %v", authenticated)
+		t.Fatalf("IsJunieAuthenticated() = true, want false: standalone module ships the CLI stub and cannot be authenticated")
+	}
+	if junie.IsJunieInstalled() == false && authenticated {
+		t.Fatalf("invariant violated: Junie reported authenticated while not installed")
 	}
 }
 

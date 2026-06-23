@@ -70,13 +70,36 @@ func TestZenHTTP_Complete_ConcurrentSessionRace(t *testing.T) {
 	p := NewZenHTTPProvider(ZenHTTPConfig{BaseURL: server.URL, AutoStart: false})
 	p.serverStarted = true
 
+	const goroutines = 8
+	var (
+		mu       sync.Mutex
+		okCount  int
+		errCount int
+	)
 	var wg sync.WaitGroup
-	for i := 0; i < 8; i++ {
+	for i := 0; i < goroutines; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_, _ = p.Complete(context.Background(), &models.LLMRequest{Prompt: "hi"})
+			resp, err := p.Complete(context.Background(), &models.LLMRequest{Prompt: "hi"})
+			mu.Lock()
+			defer mu.Unlock()
+			if err != nil {
+				errCount++
+				return
+			}
+			// Server always answers "ok"; a successful Complete MUST surface it.
+			if resp != nil && resp.Content == "ok" {
+				okCount++
+			}
 		}()
 	}
 	wg.Wait()
+
+	// Observable post-concurrency invariant (beyond -race): every one of the
+	// concurrent Complete calls must have returned the server's real "ok"
+	// response. A regression that corrupts p.sessionID under concurrency would
+	// drop or mangle responses and fail this count, not just trip the detector.
+	assert.Equal(t, 0, errCount, "no concurrent Complete call should fail against the stub server")
+	assert.Equal(t, goroutines, okCount, "all %d concurrent Complete calls must return the server's 'ok' response", goroutines)
 }

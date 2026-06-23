@@ -228,8 +228,13 @@ func TestHealthCheck(t *testing.T) {
 
 	provider := NewCloudflareProvider("test-key", "test-account", "", "")
 	err := provider.HealthCheck()
-	// In short mode we skip, otherwise we accept either success or error
-	_ = err
+	// With a bogus "test-key"/"test-account" and the real Cloudflare API,
+	// HealthCheck MUST surface a real authentication/authorization failure
+	// (it cannot legitimately succeed with fabricated credentials). Assert
+	// the observable contract: a non-nil, non-empty, typed error — not a
+	// silent success and not a discarded result.
+	require.Error(t, err, "HealthCheck with fabricated credentials must return an error, not succeed")
+	assert.NotEmpty(t, err.Error(), "HealthCheck error must carry a diagnostic message")
 }
 
 func TestHealthCheckNoAccountID(t *testing.T) {

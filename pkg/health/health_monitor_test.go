@@ -199,8 +199,9 @@ func TestHealthMonitor_ConcurrentAccess(t *testing.T) {
 		hm.RegisterProvider("provider"+string(rune('0'+i)), &mockProvider{})
 	}
 	hm.Start()
+	const iterations = 100
 	var wg sync.WaitGroup
-	for i := 0; i < 100; i++ {
+	for i := 0; i < iterations; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -213,4 +214,22 @@ func TestHealthMonitor_ConcurrentAccess(t *testing.T) {
 	}
 	wg.Wait()
 	hm.Stop()
+
+	// Observable post-concurrency invariants (not just -race coverage):
+	// every registered provider is still tracked, and the success/failure
+	// counters reflect AT LEAST the records the goroutines applied — proving
+	// the concurrent RecordSuccess/RecordFailure calls were not lost under the
+	// mutex (the background monitor loop may add a few more, hence >=, but it
+	// can never lose any of the 100 manual records).
+	agg := hm.GetAggregateHealth()
+	assert.Equal(t, 10, agg.TotalProviders, "all 10 registered providers must remain tracked after concurrent access")
+
+	h0, ok0 := hm.GetHealth("provider0")
+	if assert.True(t, ok0, "provider0 must be retrievable after concurrent RecordSuccess") {
+		assert.GreaterOrEqual(t, h0.SuccessCount, int64(iterations), "provider0 must record at least %d successes", iterations)
+	}
+	h1, ok1 := hm.GetHealth("provider1")
+	if assert.True(t, ok1, "provider1 must be retrievable after concurrent RecordFailure") {
+		assert.GreaterOrEqual(t, h1.FailureCount, int64(iterations), "provider1 must record at least %d failures", iterations)
+	}
 }
